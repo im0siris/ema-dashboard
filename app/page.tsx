@@ -4,7 +4,9 @@
 import { useState, useEffect } from "react";
 import { supabase, ScanRun, ScanResult } from "@/lib/supabase";
 
-// ---- Color helpers (same logic as the preview artifact) ----
+// ==========================================================================
+// Color helpers
+// ==========================================================================
 
 function alignmentColor(a: string) {
   if (a === "BULLISH")
@@ -23,7 +25,26 @@ function spreadColor(s: number) {
   return "#f87171";
 }
 
-// ---- Main Page Component ----
+// ==========================================================================
+// Types for the recurring tickers analysis
+// ==========================================================================
+
+interface RecurringTicker {
+  ticker: string;
+  name: string;
+  appearances: number;
+  avgSpread: number;
+  latestSpread: number;
+  latestAlignment: string;
+  latestVolRatio: number;
+  latestClose: number;
+  marketCapM: number;
+  spreadTrend: number[]; // spread values over consecutive scans (oldest → newest)
+}
+
+// ==========================================================================
+// Main Dashboard Component
+// ==========================================================================
 
 export default function Dashboard() {
   // Data state
@@ -32,10 +53,17 @@ export default function Dashboard() {
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Filter state
-  const [activeTab, setActiveTab] = useState<"results" | "config" | "history">(
-    "results",
+  // Recurring tickers state
+  const [recurringTickers, setRecurringTickers] = useState<RecurringTicker[]>(
+    [],
   );
+  const [minAppearances, setMinAppearances] = useState(3);
+  const [loadingRecurring, setLoadingRecurring] = useState(false);
+
+  // Filter state
+  const [activeTab, setActiveTab] = useState<
+    "results" | "recurring" | "config" | "history"
+  >("results");
   const [filterAlignment, setFilterAlignment] = useState("ALL");
   const [maxSpread, setMaxSpread] = useState(3.0);
   const [searchTicker, setSearchTicker] = useState("");
@@ -50,15 +78,15 @@ export default function Dashboard() {
   // ---- Load scan runs on mount ----
   useEffect(() => {
     async function loadRuns() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("scan_runs")
         .select("*")
         .order("scanned_at", { ascending: false })
-        .limit(20);
+        .limit(50);
 
       if (data && data.length > 0) {
         setScanRuns(data);
-        setSelectedRunId(data[0].id); // Auto-select latest
+        setSelectedRunId(data[0].id);
       }
       setLoading(false);
     }
@@ -80,6 +108,90 @@ export default function Dashboard() {
     }
     loadResults();
   }, [selectedRunId]);
+
+  // ---- Load recurring tickers when tab is selected or minAppearances changes ----
+  useEffect(() => {
+    if (activeTab !== "recurring" || scanRuns.length === 0) return;
+
+    async function loadRecurring() {
+      setLoadingRecurring(true);
+
+      // Get all results from the last 20 scan runs
+      const recentRunIds = scanRuns.slice(0, 20).map((r) => r.id);
+
+      const { data } = await supabase
+        .from("scan_results")
+        .select("*, scan_runs!inner(scanned_at)")
+        .in("scan_run_id", recentRunIds)
+        .order("scan_run_id", { ascending: true });
+
+      if (!data) {
+        setLoadingRecurring(false);
+        return;
+      }
+
+      // Group results by ticker
+      const tickerMap = new Map<
+        string,
+        {
+          results: (ScanResult & { scan_runs: { scanned_at: string } })[];
+        }
+      >();
+
+      for (const row of data as (ScanResult & {
+        scan_runs: { scanned_at: string };
+      })[]) {
+        if (!tickerMap.has(row.ticker)) {
+          tickerMap.set(row.ticker, { results: [] });
+        }
+        tickerMap.get(row.ticker)!.results.push(row);
+      }
+
+      // Build recurring tickers list
+      const recurring: RecurringTicker[] = [];
+
+      for (const [ticker, { results: rows }] of tickerMap) {
+        if (rows.length < minAppearances) continue;
+
+        // Sort by scan date (oldest first) for trend
+        const sorted = rows.sort(
+          (a, b) =>
+            new Date(a.scan_runs.scanned_at).getTime() -
+            new Date(b.scan_runs.scanned_at).getTime(),
+        );
+
+        const latest = sorted[sorted.length - 1];
+        const avgSpread =
+          sorted.reduce((sum, r) => sum + Number(r.spread_pct), 0) /
+          sorted.length;
+
+        recurring.push({
+          ticker,
+          name: latest.name,
+          appearances: sorted.length,
+          avgSpread: Math.round(avgSpread * 100) / 100,
+          latestSpread: Number(latest.spread_pct),
+          latestAlignment: latest.alignment,
+          latestVolRatio: Number(latest.volume_ratio),
+          latestClose: Number(latest.close_price),
+          marketCapM: Number(latest.market_cap_m),
+          spreadTrend: sorted.map((r) => Number(r.spread_pct)),
+        });
+      }
+
+      // Sort by most appearances, then by lowest average spread
+      recurring.sort((a, b) => {
+        if (b.appearances !== a.appearances)
+          return b.appearances - a.appearances;
+        return a.avgSpread - b.avgSpread;
+      });
+
+      setRecurringTickers(recurring);
+      setLoadingRecurring(false);
+    }
+
+    loadRecurring();
+  }, [activeTab, scanRuns, minAppearances]);
 
   // ---- Filter & sort results ----
   const filtered = results
@@ -106,6 +218,7 @@ export default function Dashboard() {
 
   const currentRun = scanRuns.find((r) => r.id === selectedRunId);
 
+  // ---- Loading state ----
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a12] flex items-center justify-center">
@@ -114,6 +227,7 @@ export default function Dashboard() {
     );
   }
 
+  // ---- Empty state ----
   if (scanRuns.length === 0) {
     return (
       <div className="min-h-screen bg-[#0a0a12] flex items-center justify-center p-8">
@@ -135,14 +249,13 @@ export default function Dashboard() {
     );
   }
 
-  // ---- Render (same visual structure as the preview artifact) ----
-  // You now have the full Supabase-connected dashboard!
-  // The JSX below follows the same pattern as the preview.
-  // For brevity, I'll show the key data-connected parts:
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-[#e2e2e8] font-mono text-sm">
-      {/* Header */}
+      {/* ---- HEADER ---- */}
       <div className="border-b border-[#1a1a2e] px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e88]" />
@@ -152,7 +265,7 @@ export default function Dashboard() {
           <span className="text-[11px] text-gray-600">v2.0</span>
         </div>
         {currentRun && (
-          <div className="text-[11px] text-gray-500 flex gap-2">
+          <div className="text-[11px] text-gray-500 flex gap-2 flex-wrap justify-end">
             <span>Last scan:</span>
             <span className="text-purple-400">
               {new Date(currentRun.scanned_at).toLocaleString()}
@@ -161,13 +274,18 @@ export default function Dashboard() {
             <span className="text-green-400">
               {currentRun.total_results} results
             </span>
+            <span className="text-gray-700">|</span>
+            <span className="text-gray-400">
+              ${currentRun.min_market_cap_m}M–${currentRun.max_market_cap_m}M, ≤
+              {currentRun.max_spread_pct}%
+            </span>
           </div>
         )}
       </div>
 
-      {/* Tabs */}
+      {/* ---- TABS ---- */}
       <div className="flex border-b border-[#1a1a2e]">
-        {(["results", "config", "history"] as const).map((tab) => (
+        {(["results", "recurring", "config", "history"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -177,14 +295,55 @@ export default function Dashboard() {
                 : "text-gray-600 border-transparent hover:text-gray-400"
             }`}
           >
-            {tab}
+            {tab === "recurring" ? "🔁 Recurring" : tab}
           </button>
         ))}
       </div>
 
       <div className="p-6">
+        {/* ================================================================
+            RESULTS TAB
+            ================================================================ */}
         {activeTab === "results" && (
           <div>
+            {/* Scan info banner */}
+            {currentRun && (
+              <div className="mb-4 px-3 py-2 bg-[#0e0e1a] border border-[#1a1a2e] rounded-md text-[11px] text-gray-500 flex gap-4 flex-wrap">
+                <span>Scan #{currentRun.id}</span>
+                <span>
+                  MC:{" "}
+                  <span className="text-gray-300">
+                    ${currentRun.min_market_cap_m}M – $
+                    {currentRun.max_market_cap_m}M
+                  </span>
+                </span>
+                <span>
+                  Max spread:{" "}
+                  <span className="text-gray-300">
+                    {currentRun.max_spread_pct}%
+                  </span>
+                </span>
+                <span>
+                  Universe:{" "}
+                  <span className="text-gray-300">
+                    {currentRun.total_universe}
+                  </span>
+                </span>
+                <span>
+                  After MC filter:{" "}
+                  <span className="text-gray-300">
+                    {currentRun.total_filtered}
+                  </span>
+                </span>
+                <span>
+                  Results:{" "}
+                  <span className="text-green-400">
+                    {currentRun.total_results}
+                  </span>
+                </span>
+              </div>
+            )}
+
             {/* Filters */}
             <div className="flex gap-4 mb-4 flex-wrap items-end">
               <div>
@@ -250,7 +409,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Table */}
+            {/* Results table */}
             <div className="overflow-x-auto border border-[#1a1a2e] rounded-md">
               <table className="w-full">
                 <thead>
@@ -366,6 +525,191 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ================================================================
+            RECURRING TICKERS TAB
+            ================================================================
+            Shows stocks that appear in multiple consecutive scans.
+            If a stock keeps showing up with tight MAs day after day,
+            it's building pressure for a breakout.
+            ================================================================ */}
+        {activeTab === "recurring" && (
+          <div>
+            <div className="flex items-end gap-6 mb-5">
+              <div>
+                <h2 className="text-sm font-bold text-purple-400 tracking-wider mb-1">
+                  RECURRING TICKERS
+                </h2>
+                <p className="text-gray-600 text-[11px]">
+                  Stocks appearing in multiple scans — persistent compression
+                  signals stronger setups.
+                </p>
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                  Min appearances:{" "}
+                  <span className="text-purple-400">{minAppearances}</span>
+                </label>
+                <input
+                  type="range"
+                  min={2}
+                  max={10}
+                  step={1}
+                  value={minAppearances}
+                  onChange={(e) => setMinAppearances(parseInt(e.target.value))}
+                  className="w-32 accent-purple-500"
+                />
+              </div>
+              <div className="ml-auto text-xs text-gray-500">
+                {loadingRecurring
+                  ? "Loading..."
+                  : `${recurringTickers.length} tickers`}
+              </div>
+            </div>
+
+            {!loadingRecurring && recurringTickers.length === 0 && (
+              <div className="text-center py-12 text-gray-600">
+                <p className="text-sm mb-2">
+                  No recurring tickers found with {minAppearances}+ appearances.
+                </p>
+                <p className="text-xs">
+                  Try lowering the minimum or run more scans over multiple days.
+                </p>
+              </div>
+            )}
+
+            {!loadingRecurring && recurringTickers.length > 0 && (
+              <div className="overflow-x-auto border border-[#1a1a2e] rounded-md">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#0e0e1a]">
+                      {[
+                        "Ticker",
+                        "Name",
+                        "Appearances",
+                        "Spread Trend",
+                        "Latest Spread",
+                        "Avg Spread",
+                        "Alignment",
+                        "Vol Ratio",
+                        "Close",
+                        "MC ($M)",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recurringTickers.map((r, i) => (
+                      <tr
+                        key={r.ticker}
+                        className={`${i % 2 === 0 ? "bg-[#0a0a12]" : "bg-[#0e0e18]"} hover:bg-[#14142a] transition-colors`}
+                      >
+                        <td className="px-3 py-2 font-bold">
+                          <a
+                            href={`https://finance.yahoo.com/quote/${r.ticker}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-400 hover:underline"
+                          >
+                            {r.ticker}
+                          </a>
+                        </td>
+                        <td className="px-3 py-2 text-gray-500 max-w-[180px] truncate">
+                          {r.name}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className={`font-bold ${r.appearances >= 5 ? "text-green-400" : r.appearances >= 3 ? "text-yellow-400" : "text-gray-400"}`}
+                          >
+                            {r.appearances}x
+                          </span>
+                        </td>
+                        {/* Mini sparkline showing spread over consecutive scans */}
+                        <td className="px-3 py-2">
+                          <div className="flex items-end gap-[2px] h-4">
+                            {r.spreadTrend.map((s, idx) => {
+                              const maxS = Math.max(...r.spreadTrend, 1);
+                              const height = Math.max((s / maxS) * 16, 2);
+                              return (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    width: 4,
+                                    height,
+                                    borderRadius: 1,
+                                    background: spreadColor(s),
+                                    opacity:
+                                      idx === r.spreadTrend.length - 1
+                                        ? 1
+                                        : 0.5,
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className="font-semibold tabular-nums"
+                            style={{ color: spreadColor(r.latestSpread) }}
+                          >
+                            {r.latestSpread.toFixed(2)}%
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 tabular-nums text-gray-400">
+                          {r.avgSpread.toFixed(2)}%
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className="px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wide border"
+                            style={{
+                              background: alignmentColor(r.latestAlignment).bg,
+                              color: alignmentColor(r.latestAlignment).text,
+                              borderColor: alignmentColor(r.latestAlignment)
+                                .border,
+                            }}
+                          >
+                            {r.latestAlignment}
+                          </span>
+                        </td>
+                        <td
+                          className="px-3 py-2 tabular-nums"
+                          style={{
+                            color:
+                              r.latestVolRatio > 1.2
+                                ? "#22c55e"
+                                : r.latestVolRatio > 1.0
+                                  ? "#a3e635"
+                                  : "#6b7280",
+                            fontWeight: r.latestVolRatio > 1.2 ? 700 : 400,
+                          }}
+                        >
+                          {r.latestVolRatio.toFixed(2)}x{" "}
+                          {r.latestVolRatio > 1.2 && "▲"}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums font-semibold">
+                          ${r.latestClose.toFixed(2)}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums">
+                          ${r.marketCapM}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================================================================
+            CONFIG TAB
+            ================================================================ */}
         {activeTab === "config" && (
           <div className="max-w-lg">
             <h2 className="text-sm font-bold text-purple-400 tracking-wider mb-5">
@@ -373,7 +717,8 @@ export default function Dashboard() {
             </h2>
             <p className="text-gray-500 text-xs mb-6 leading-relaxed">
               Configure parameters below. The terminal command updates live —
-              copy and run it.
+              copy and run it in PowerShell. Results are saved to Supabase and
+              appear here automatically.
             </p>
             <div className="flex flex-col gap-5">
               <div>
@@ -414,16 +759,35 @@ export default function Dashboard() {
                 <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1.5">
                   Terminal Command
                 </label>
-                <div className="bg-[#12121e] border border-[#2a2a3e] rounded p-3 text-green-400 text-xs">
-                  <span className="text-gray-600">$</span> python scanner.py
-                  --min-mc {configMinMc} --max-mc {configMaxMc} --spread{" "}
-                  {configSpread}
+                <div className="bg-[#12121e] border border-[#2a2a3e] rounded p-3 text-green-400 text-xs flex items-center justify-between gap-3">
+                  <span>
+                    <span className="text-gray-600">$</span> python scanner.py
+                    --min-mc {configMinMc} --max-mc {configMaxMc} --spread{" "}
+                    {configSpread}
+                  </span>
+                  <button
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        `python scanner.py --min-mc ${configMinMc} --max-mc ${configMaxMc} --spread ${configSpread}`,
+                      )
+                    }
+                    className="px-2 py-1 bg-[#1e1b2e] border border-[#4c3a8a] rounded text-purple-400 text-[10px] font-semibold hover:bg-[#2a2548] transition-colors whitespace-nowrap"
+                  >
+                    Copy
+                  </button>
                 </div>
+                <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">
+                  Copy and run this command in PowerShell. After the scan
+                  completes, refresh this page to see the new results.
+                </p>
               </div>
             </div>
           </div>
         )}
 
+        {/* ================================================================
+            HISTORY TAB
+            ================================================================ */}
         {activeTab === "history" && (
           <div>
             <h2 className="text-sm font-bold text-purple-400 tracking-wider mb-5">
@@ -433,24 +797,32 @@ export default function Dashboard() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#0e0e1a]">
-                    {["Date", "MC Range", "Max Spread", "Results", ""].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e]"
-                        >
-                          {h}
-                        </th>
-                      ),
-                    )}
+                    {[
+                      "#",
+                      "Date",
+                      "MC Range",
+                      "Max Spread",
+                      "Universe",
+                      "Filtered",
+                      "Results",
+                      "",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e]"
+                      >
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {scanRuns.map((run, i) => (
                     <tr
                       key={run.id}
-                      className={`${selectedRunId === run.id ? "bg-[#14142a]" : i % 2 === 0 ? "bg-[#0a0a12]" : "bg-[#0e0e18]"}`}
+                      className={`${selectedRunId === run.id ? "bg-[#14142a]" : i % 2 === 0 ? "bg-[#0a0a12]" : "bg-[#0e0e18]"} hover:bg-[#14142a] transition-colors`}
                     >
+                      <td className="px-3 py-2.5 text-gray-600">#{run.id}</td>
                       <td className="px-3 py-2.5">
                         {new Date(run.scanned_at).toLocaleString()}
                       </td>
@@ -459,6 +831,12 @@ export default function Dashboard() {
                       </td>
                       <td className="px-3 py-2.5 text-gray-500">
                         {run.max_spread_pct}%
+                      </td>
+                      <td className="px-3 py-2.5 text-gray-500">
+                        {run.total_universe}
+                      </td>
+                      <td className="px-3 py-2.5 text-gray-500">
+                        {run.total_filtered}
                       </td>
                       <td className="px-3 py-2.5">
                         <span className="text-green-400 font-semibold">
@@ -471,9 +849,13 @@ export default function Dashboard() {
                             setSelectedRunId(run.id);
                             setActiveTab("results");
                           }}
-                          className="bg-[#1e1b2e] border border-[#4c3a8a] rounded px-3 py-1 text-purple-400 text-[11px] font-semibold hover:bg-[#2a2548] transition-colors"
+                          className={`border rounded px-3 py-1 text-[11px] font-semibold transition-colors ${
+                            selectedRunId === run.id
+                              ? "bg-purple-500/20 border-purple-500 text-purple-300"
+                              : "bg-[#1e1b2e] border-[#4c3a8a] text-purple-400 hover:bg-[#2a2548]"
+                          }`}
                         >
-                          View
+                          {selectedRunId === run.id ? "Viewing" : "View"}
                         </button>
                       </td>
                     </tr>
