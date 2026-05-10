@@ -165,7 +165,11 @@ def main() -> int:
                 # Machine-readable line for scanner_worker.py to parse.
                 print(f"SCAN_RUN_ID={run_id}")
         except Exception as e:
-            print(f"  Supabase write skipped: {e}")
+            # Non-zero exit so the worker marks scan_request 'failed' with this
+            # message in error_message, instead of pretending the scan succeeded
+            # while scan_results is empty.
+            print(f"  Supabase write FAILED: {e}", file=sys.stderr)
+            return 2
 
     return 0
 

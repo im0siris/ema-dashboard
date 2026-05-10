@@ -1,5 +1,6 @@
 """Output: console table, CSV export, Supabase REST writer."""
 import json
+import math
 import os
 import urllib.request
 from datetime import datetime, timezone
@@ -10,6 +11,24 @@ from dotenv import load_dotenv
 import config
 
 load_dotenv()
+
+
+def _sanitize(obj):
+    """Recursively replace NaN floats with None.
+
+    JSON has no NaN; Python's json.dumps writes literal `NaN` which Supabase
+    rejects with a 400. Scorers legitimately return float('nan') for diagnostic
+    fields when data is insufficient (e.g. base_break_historical_max when
+    monthly history < 60). Sanitize at the wire boundary instead of forcing
+    every scorer to use None.
+    """
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(v) for v in obj]
+    if isinstance(obj, float) and math.isnan(obj):
+        return None
+    return obj
 
 
 def print_table(results: list[dict], mode, top_n: int) -> None:
@@ -48,7 +67,7 @@ class SupabaseREST:
 
     def insert(self, table: str, data):
         url = f"{self.base_url}/{table}"
-        body = json.dumps(data, default=str).encode("utf-8")
+        body = json.dumps(_sanitize(data), default=str, allow_nan=False).encode("utf-8")
         req = urllib.request.Request(url, data=body, headers=self.headers, method="POST")
         return json.loads(urllib.request.urlopen(req, timeout=30).read())
 
@@ -61,7 +80,7 @@ class SupabaseREST:
     def update(self, table: str, filter_query: str, data: dict):
         """PATCH rows matching filter_query (must include the leading '?'), e.g. '?id=eq.123'."""
         url = f"{self.base_url}/{table}{filter_query}"
-        body = json.dumps(data, default=str).encode("utf-8")
+        body = json.dumps(_sanitize(data), default=str, allow_nan=False).encode("utf-8")
         req = urllib.request.Request(url, data=body, headers=self.headers, method="PATCH")
         return json.loads(urllib.request.urlopen(req, timeout=30).read())
 
@@ -124,13 +143,20 @@ def write_supabase(
         })
 
     bs = config.SUPABASE_BATCH_INSERT
+    inserted = 0
     for i in range(0, len(rows), bs):
         batch = rows[i : i + bs]
         try:
             client.insert("scan_results", batch)
+            inserted += len(batch)
         except Exception as e:
-            print(f"  Failed to insert batch starting at {i}: {e}")
-            return scan_run_id
+            # Loud failure: raise so the worker captures it and marks the
+            # scan_request 'failed' instead of pretending everything is fine
+            # while scan_runs.kept_count says N but scan_results has 0 rows.
+            raise RuntimeError(
+                f"scan_results insert failed at batch starting {i} "
+                f"(inserted {inserted}/{len(rows)} so far): {e}"
+            ) from e
 
-    print(f"  Saved {len(rows)} results to Supabase")
+    print(f"  Saved {inserted} results to Supabase")
     return scan_run_id
