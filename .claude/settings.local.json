@@ -18,7 +18,8 @@
       "Bash(python scanner.py --mode full_setup --min-mc 200000 --max-mc 1000000 --no-db --no-regime --top 5)",
       "Bash(python scanner.py --mode compression --min-mc 5000 --max-mc 10000 --no-db --no-regime --top 5 --output today_v3_smoke.csv)",
       "Bash(npx tsc *)",
-      "Bash(./node_modules/.bin/tsc --noEmit)"
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(python -c \"from scanner_worker import run_scanner, RUN_ID_RX, SCANNER; print\\('imports OK; scanner=', SCANNER, 'exists=', SCANNER.exists\\(\\)\\)\")"
     ]
   }
 }
