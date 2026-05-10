@@ -23,8 +23,11 @@ def _cache_dir(today: str | None = None) -> Path:
     return p
 
 
-def _cache_path_for(ticker: str) -> Path:
-    return _cache_dir() / f"{ticker}_daily.pkl"
+def _cache_path_for(ticker: str, period: str) -> Path:
+    # Period is part of the filename so different mode periods (e.g. 6mo for
+    # compression vs 5y for full_setup) get distinct cache entries instead of
+    # silently serving stale shorter data.
+    return _cache_dir() / f"{ticker}_daily_{period}.pkl"
 
 
 def _resample_weekly(df: pd.DataFrame) -> pd.DataFrame:
@@ -72,7 +75,7 @@ def download_with_cache(
 
     if use_cache:
         for t in tickers:
-            cp = _cache_path_for(t)
+            cp = _cache_path_for(t, period)
             if cp.exists():
                 try:
                     df = pd.read_pickle(cp)
@@ -90,7 +93,7 @@ def download_with_cache(
         fetched = _yf_batch_download(to_fetch, period)
         for ticker, df in fetched.items():
             if use_cache:
-                df.to_pickle(_cache_path_for(ticker))
+                df.to_pickle(_cache_path_for(ticker, period))
             out[ticker] = build_frames(df)
     elif use_cache:
         print(f"  Cache: all {len(out)} tickers hit (no fetch needed)")
