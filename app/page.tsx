@@ -8,7 +8,12 @@ import {
   ScanRequest,
   ScanResult,
   CompressionRow,
+  FullSetupRow,
   asCompressionRow,
+  asFullSetupRow,
+  ScanMode,
+  ALL_MODES,
+  MODE_LABELS,
 } from "@/lib/supabase";
 
 // ==========================================================================
@@ -16,13 +21,14 @@ import {
 // ==========================================================================
 
 function alignmentColor(a: string) {
-  if (a === "BULLISH")
+  if (a === "BULLISH" || a === "FULL_BULL")
     return { bg: "#0d2818", text: "#34d399", border: "#065f26" };
-  if (a === "BEARISH")
+  if (a === "PARTIAL_BULL")
+    return { bg: "#162a1c", text: "#a3e635", border: "#3f6212" };
+  if (a === "BEARISH" || a === "BEAR")
     return { bg: "#2d1215", text: "#f87171", border: "#7f1d1d" };
   if (a === "MIXED")
     return { bg: "#1e1b2e", text: "#a78bfa", border: "#4c3a8a" };
-  // INSUFFICIENT_DATA or other
   return { bg: "#1a1a24", text: "#6b7280", border: "#2a2a3e" };
 }
 
@@ -47,82 +53,208 @@ function regimeColor(label: string | null) {
   return { bg: "#1a1a24", text: "#6b7280", border: "#2a2a3e" };
 }
 
+function scoreColor(s: number) {
+  if (s >= 80) return "#22c55e";
+  if (s >= 60) return "#a3e635";
+  if (s >= 40) return "#facc15";
+  if (s >= 20) return "#fb923c";
+  return "#6b7280";
+}
+
 // ==========================================================================
-// Types for the recurring tickers analysis
+// Recurring tickers types
 // ==========================================================================
 
 interface RecurringTicker {
   ticker: string;
   name: string;
   appearances: number;
-  avgSpread: number;
-  latestSpread: number;
-  latestAlignment: string;
-  latestClose: number;
+  avgScore: number;
+  latestScore: number;
   marketCapM: number;
-  spreadTrend: number[];
+  scoreTrend: number[];
+  // compression-mode extras
+  latestSpread: number | null;
+  latestAlignment: string | null;
 }
 
 // ==========================================================================
 // Main Dashboard Component
 // ==========================================================================
 
-const COMPRESSION_MODE = "compression";
-
 export default function Dashboard() {
-  // Data state
+  // Data
   const [scanRuns, setScanRuns] = useState<ScanRun[]>([]);
-  const [results, setResults] = useState<CompressionRow[]>([]);
+  const [results, setResults] = useState<ScanResult[]>([]);
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
+  const [selectedMode, setSelectedMode] = useState<ScanMode>("compression");
   const [loading, setLoading] = useState(true);
 
-  // Recurring tickers state
+  // Recurring tickers
   const [recurringTickers, setRecurringTickers] = useState<RecurringTicker[]>(
     [],
   );
   const [minAppearances, setMinAppearances] = useState(3);
   const [loadingRecurring, setLoadingRecurring] = useState(false);
 
-  // Filter / UI state
+  // Filter / UI
   const [activeTab, setActiveTab] = useState<
     "results" | "recurring" | "config" | "history"
   >("results");
   const [filterAlignment, setFilterAlignment] = useState("ALL");
   const [maxSpread, setMaxSpread] = useState(3.0);
+  const [minComposite, setMinComposite] = useState(0);
   const [searchTicker, setSearchTicker] = useState("");
-  const [sortBy, setSortBy] = useState<keyof CompressionRow>("spread_pct");
+  const [sortBy, setSortBy] = useState<string>("spread_pct");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  // Config state
+  // Config
   const [configMinMc, setConfigMinMc] = useState(200);
   const [configMaxMc, setConfigMaxMc] = useState(1000);
 
-  // Scan-request (UI-triggered run) state
+  // Scan-request state
   const [activeRequest, setActiveRequest] = useState<ScanRequest | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
 
-  // ---- Load scan runs (compression mode only for now) ----
+  // ---- Reset sort when mode changes ----
+  useEffect(() => {
+    if (selectedMode === "compression") {
+      setSortBy("spread_pct");
+      setSortDir("asc");
+    } else {
+      setSortBy("composite_score");
+      setSortDir("desc");
+    }
+    setSelectedRunId(null);
+    setResults([]);
+    setFilterAlignment("ALL");
+  }, [selectedMode]);
+
+  // ---- Load scan runs for selected mode ----
   async function loadRuns(selectLatest = false) {
     const { data } = await supabase
       .from("scan_runs")
       .select("*")
-      .eq("mode", COMPRESSION_MODE)
+      .eq("mode", selectedMode)
       .order("scanned_at", { ascending: false })
       .limit(50);
 
     if (data && data.length > 0) {
       setScanRuns(data);
       if (selectLatest || !selectedRunId) setSelectedRunId(data[0].id);
+    } else {
+      setScanRuns([]);
+      setSelectedRunId(null);
     }
     setLoading(false);
   }
 
   useEffect(() => {
-    loadRuns();
+    loadRuns(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedMode]);
 
-  // ---- Poll the active scan request until it terminates ----
+  // ---- Load results when selected run changes ----
+  useEffect(() => {
+    if (!selectedRunId) {
+      setResults([]);
+      return;
+    }
+
+    async function loadResults() {
+      const { data } = await supabase
+        .from("scan_results")
+        .select("*")
+        .eq("scan_run_id", selectedRunId)
+        .limit(500);
+
+      if (data) setResults(data as ScanResult[]);
+    }
+    loadResults();
+  }, [selectedRunId]);
+
+  // ---- Load recurring tickers (mode-aware) ----
+  useEffect(() => {
+    if (activeTab !== "recurring" || scanRuns.length === 0) return;
+
+    async function loadRecurring() {
+      setLoadingRecurring(true);
+
+      const recentRunIds = scanRuns.slice(0, 20).map((r) => r.id);
+
+      const { data } = await supabase
+        .from("scan_results")
+        .select("*, scan_runs!inner(scanned_at)")
+        .in("scan_run_id", recentRunIds)
+        .eq("mode", selectedMode)
+        .order("scan_run_id", { ascending: true });
+
+      if (!data) {
+        setLoadingRecurring(false);
+        return;
+      }
+
+      type RowWithRun = ScanResult & { scan_runs: { scanned_at: string } };
+
+      const tickerMap = new Map<string, RowWithRun[]>();
+      for (const row of data as RowWithRun[]) {
+        if (!tickerMap.has(row.ticker)) tickerMap.set(row.ticker, []);
+        tickerMap.get(row.ticker)!.push(row);
+      }
+
+      const recurring: RecurringTicker[] = [];
+      for (const [ticker, rows] of tickerMap) {
+        if (rows.length < minAppearances) continue;
+        const sorted = rows.sort(
+          (a, b) =>
+            new Date(a.scan_runs.scanned_at).getTime() -
+            new Date(b.scan_runs.scanned_at).getTime(),
+        );
+        const latest = sorted[sorted.length - 1];
+
+        // Pick the right "score" field per mode
+        let scoreOf: (r: ScanResult) => number;
+        let latestSpread: number | null = null;
+        let latestAlignment: string | null = null;
+        if (selectedMode === "compression") {
+          scoreOf = (r) => asCompressionRow(r).score;
+          const proj = asCompressionRow(latest);
+          latestSpread = proj.spread_pct;
+          latestAlignment = proj.alignment;
+        } else {
+          scoreOf = (r) => asFullSetupRow(r).composite_score;
+        }
+
+        const scores = sorted.map(scoreOf);
+        const avgScore = scores.reduce((s, v) => s + v, 0) / scores.length;
+
+        recurring.push({
+          ticker,
+          name: latest.name ?? "",
+          appearances: sorted.length,
+          avgScore: Math.round(avgScore * 100) / 100,
+          latestScore: scores[scores.length - 1],
+          marketCapM: Number(latest.market_cap_m ?? 0),
+          scoreTrend: scores,
+          latestSpread,
+          latestAlignment,
+        });
+      }
+
+      recurring.sort((a, b) => {
+        if (b.appearances !== a.appearances)
+          return b.appearances - a.appearances;
+        return b.avgScore - a.avgScore;
+      });
+
+      setRecurringTickers(recurring);
+      setLoadingRecurring(false);
+    }
+
+    loadRecurring();
+  }, [activeTab, scanRuns, minAppearances, selectedMode]);
+
+  // ---- Poll active scan request ----
   useEffect(() => {
     if (!activeRequest) return;
     if (
@@ -142,11 +274,11 @@ export default function Dashboard() {
       setActiveRequest(data);
 
       if (data.status === "completed") {
-        await loadRuns(true);
-        if (data.scan_run_id) {
-          setSelectedRunId(data.scan_run_id);
+        // If the completed run is for the currently selected mode, reload it
+        if (data.mode === selectedMode) {
+          await loadRuns(true);
+          if (data.scan_run_id) setSelectedRunId(data.scan_run_id);
         }
-        // Linger on the "Done!" badge briefly, then clear.
         setTimeout(() => setActiveRequest(null), 2500);
       } else if (data.status === "failed") {
         setRunError(data.error_message ?? "Scan failed (no error message).");
@@ -155,7 +287,7 @@ export default function Dashboard() {
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeRequest?.id, activeRequest?.status]);
+  }, [activeRequest?.id, activeRequest?.status, selectedMode]);
 
   // ---- Run Scan handler ----
   async function handleRunScan() {
@@ -163,7 +295,7 @@ export default function Dashboard() {
     const { data, error } = await supabase
       .from("scan_requests")
       .insert({
-        mode: COMPRESSION_MODE,
+        mode: selectedMode,
         min_market_cap_m: configMinMc,
         max_market_cap_m: configMaxMc,
       })
@@ -182,97 +314,21 @@ export default function Dashboard() {
     setRunError(null);
   }
 
-  // ---- Load results when selected run changes ----
-  useEffect(() => {
-    if (!selectedRunId) return;
-
-    async function loadResults() {
-      const { data } = await supabase
-        .from("scan_results")
-        .select("*")
-        .eq("scan_run_id", selectedRunId);
-
-      if (data) {
-        const rows = (data as ScanResult[]).map(asCompressionRow);
-        rows.sort((a, b) => a.spread_pct - b.spread_pct);
-        setResults(rows);
-      }
+  function handleSort(col: string) {
+    if (sortBy === col) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else {
+      setSortBy(col);
+      setSortDir("asc");
     }
-    loadResults();
-  }, [selectedRunId]);
+  }
 
-  // ---- Load recurring tickers when tab is selected or minAppearances changes ----
-  useEffect(() => {
-    if (activeTab !== "recurring" || scanRuns.length === 0) return;
+  // ---- Project + filter results per mode ----
+  const compressionRows: CompressionRow[] =
+    selectedMode === "compression" ? results.map(asCompressionRow) : [];
+  const fullSetupRows: FullSetupRow[] =
+    selectedMode === "full_setup" ? results.map(asFullSetupRow) : [];
 
-    async function loadRecurring() {
-      setLoadingRecurring(true);
-
-      const recentRunIds = scanRuns.slice(0, 20).map((r) => r.id);
-
-      const { data } = await supabase
-        .from("scan_results")
-        .select("*, scan_runs!inner(scanned_at)")
-        .in("scan_run_id", recentRunIds)
-        .eq("mode", COMPRESSION_MODE)
-        .order("scan_run_id", { ascending: true });
-
-      if (!data) {
-        setLoadingRecurring(false);
-        return;
-      }
-
-      type RowWithRun = ScanResult & { scan_runs: { scanned_at: string } };
-
-      // Group results by ticker
-      const tickerMap = new Map<string, RowWithRun[]>();
-      for (const row of data as RowWithRun[]) {
-        if (!tickerMap.has(row.ticker)) tickerMap.set(row.ticker, []);
-        tickerMap.get(row.ticker)!.push(row);
-      }
-
-      const recurring: RecurringTicker[] = [];
-      for (const [ticker, rows] of tickerMap) {
-        if (rows.length < minAppearances) continue;
-
-        const sorted = rows.sort(
-          (a, b) =>
-            new Date(a.scan_runs.scanned_at).getTime() -
-            new Date(b.scan_runs.scanned_at).getTime(),
-        );
-        const projected = sorted.map(asCompressionRow);
-        const latest = projected[projected.length - 1];
-        const avgSpread =
-          projected.reduce((sum, r) => sum + r.spread_pct, 0) / projected.length;
-
-        recurring.push({
-          ticker,
-          name: latest.name,
-          appearances: projected.length,
-          avgSpread: Math.round(avgSpread * 100) / 100,
-          latestSpread: latest.spread_pct,
-          latestAlignment: latest.alignment,
-          latestClose: latest.close,
-          marketCapM: latest.market_cap_m,
-          spreadTrend: projected.map((r) => r.spread_pct),
-        });
-      }
-
-      recurring.sort((a, b) => {
-        if (b.appearances !== a.appearances)
-          return b.appearances - a.appearances;
-        return a.avgSpread - b.avgSpread;
-      });
-
-      setRecurringTickers(recurring);
-      setLoadingRecurring(false);
-    }
-
-    loadRecurring();
-  }, [activeTab, scanRuns, minAppearances]);
-
-  // ---- Filter & sort results ----
-  const filtered = results
+  const filteredCompression = compressionRows
     .filter((r) => filterAlignment === "ALL" || r.alignment === filterAlignment)
     .filter((r) => r.spread_pct <= maxSpread)
     .filter(
@@ -281,52 +337,36 @@ export default function Dashboard() {
         r.ticker.toLowerCase().includes(searchTicker.toLowerCase()),
     )
     .sort((a, b) => {
-      const aVal = a[sortBy] ?? 0;
-      const bVal = b[sortBy] ?? 0;
+      const aVal = (a as unknown as Record<string, unknown>)[sortBy] ?? 0;
+      const bVal = (b as unknown as Record<string, unknown>)[sortBy] ?? 0;
       return sortDir === "asc" ? (aVal > bVal ? 1 : -1) : aVal < bVal ? 1 : -1;
     });
 
-  const handleSort = (col: keyof CompressionRow) => {
-    if (sortBy === col) setSortDir(sortDir === "asc" ? "desc" : "asc");
-    else {
-      setSortBy(col);
-      setSortDir("asc");
-    }
-  };
+  const filteredFullSetup = fullSetupRows
+    .filter((r) => r.composite_score >= minComposite)
+    .filter(
+      (r) =>
+        !searchTicker ||
+        r.ticker.toLowerCase().includes(searchTicker.toLowerCase()),
+    )
+    .sort((a, b) => {
+      const aVal = (a as unknown as Record<string, unknown>)[sortBy] ?? 0;
+      const bVal = (b as unknown as Record<string, unknown>)[sortBy] ?? 0;
+      return sortDir === "asc" ? (aVal > bVal ? 1 : -1) : aVal < bVal ? 1 : -1;
+    });
+
+  const visibleCount =
+    selectedMode === "compression"
+      ? filteredCompression.length
+      : filteredFullSetup.length;
 
   const currentRun = scanRuns.find((r) => r.id === selectedRunId);
 
-  // ---- Loading state ----
+  // ---- Loading ----
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0a12] flex items-center justify-center">
         <p className="text-gray-500 font-mono">Loading scanner data...</p>
-      </div>
-    );
-  }
-
-  // ---- Empty state ----
-  if (scanRuns.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#0a0a12] flex items-center justify-center p-8">
-        <div className="text-center font-mono max-w-md">
-          <h1 className="text-xl font-bold text-purple-400 mb-4">
-            EMA SCANNER v3
-          </h1>
-          <p className="text-gray-500 mb-6">
-            No compression scans found yet. Run your first scan:
-          </p>
-          <code className="block bg-[#12121e] border border-[#2a2a3e] rounded p-4 text-green-400 text-sm">
-            python scanner.py --mode compression
-          </code>
-          <p className="text-gray-600 text-xs mt-4">
-            Results will appear here automatically after the run completes.
-          </p>
-          <p className="text-gray-700 text-[10px] mt-3">
-            (If this is your first v3 run, ensure
-            legacy/migrations/001_recreate_tables.sql has been applied.)
-          </p>
-        </div>
       </div>
     );
   }
@@ -339,17 +379,30 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#0a0a12] text-[#e2e2e8] font-mono text-sm">
       {/* ---- HEADER ---- */}
       <div className="border-b border-[#1a1a2e] px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e88]" />
           <span className="text-[15px] font-bold tracking-wider">
             EMA SCANNER
           </span>
           <span className="text-[11px] text-gray-600">v3.0</span>
-          {currentRun && (
-            <span className="text-[10px] text-purple-400 border border-[#4c3a8a] bg-[#1e1b2e] rounded px-2 py-[2px] uppercase tracking-wider">
-              {currentRun.mode}
-            </span>
-          )}
+
+          {/* Mode switcher */}
+          <div className="flex border border-[#2a2a3e] rounded overflow-hidden ml-2">
+            {ALL_MODES.map((m) => (
+              <button
+                key={m}
+                onClick={() => setSelectedMode(m)}
+                className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                  selectedMode === m
+                    ? "bg-purple-500/20 text-purple-300"
+                    : "bg-transparent text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {MODE_LABELS[m]}
+              </button>
+            ))}
+          </div>
+
           {currentRun?.regime_state && (
             <span
               className="text-[10px] border rounded px-2 py-[2px] uppercase tracking-wider"
@@ -377,8 +430,8 @@ export default function Dashboard() {
                 activeRequest.status === "running") && (
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
               )}
-              {activeRequest.status === "pending" && "Queued"}
-              {activeRequest.status === "running" && "Scanning..."}
+              {activeRequest.status === "pending" && `Queued (${activeRequest.mode})`}
+              {activeRequest.status === "running" && `Scanning (${activeRequest.mode})...`}
               {activeRequest.status === "completed" && "Done"}
               {activeRequest.status === "failed" && "Failed"}
             </span>
@@ -421,16 +474,31 @@ export default function Dashboard() {
 
       <div className="p-6">
         {/* ================================================================
+            EMPTY STATE FOR THIS MODE
+            ================================================================ */}
+        {scanRuns.length === 0 && activeTab !== "config" && (
+          <div className="text-center py-16 text-gray-500">
+            <p className="mb-3">
+              No <span className="text-purple-400">{selectedMode}</span> scans
+              found yet.
+            </p>
+            <p className="text-xs text-gray-600">
+              Go to the Config tab and click "Run Scan Now" to queue one.
+            </p>
+          </div>
+        )}
+
+        {/* ================================================================
             RESULTS TAB
             ================================================================ */}
-        {activeTab === "results" && (
+        {activeTab === "results" && scanRuns.length > 0 && (
           <div>
             {currentRun && (
               <div className="mb-4 px-3 py-2 bg-[#0e0e1a] border border-[#1a1a2e] rounded-md text-[11px] text-gray-500 flex gap-4 flex-wrap">
                 <span>Scan #{currentRun.id}</span>
                 <span>
                   Mode:{" "}
-                  <span className="text-gray-300">{currentRun.mode}</span>
+                  <span className="text-purple-400">{currentRun.mode}</span>
                 </span>
                 <span>
                   MC:{" "}
@@ -480,174 +548,367 @@ export default function Dashboard() {
                   className="bg-[#12121e] border border-[#2a2a3e] rounded px-3 py-1.5 text-xs w-24 outline-none focus:border-purple-500"
                 />
               </div>
-              <div>
-                <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
-                  Alignment
-                </label>
-                <div className="flex gap-1">
-                  {["ALL", "BULLISH", "BEARISH", "MIXED"].map((a) => {
-                    const c =
-                      a === "ALL"
-                        ? { bg: "#1e1b2e", text: "#a78bfa", border: "#4c3a8a" }
-                        : alignmentColor(a);
-                    return (
-                      <button
-                        key={a}
-                        onClick={() => setFilterAlignment(a)}
-                        className="px-2.5 py-1 rounded text-[10px] font-semibold tracking-wide border transition-all"
-                        style={{
-                          borderColor:
-                            filterAlignment === a ? c.border : "#2a2a3e",
-                          background:
-                            filterAlignment === a ? c.bg : "transparent",
-                          color: filterAlignment === a ? c.text : "#4a4a6a",
-                        }}
-                      >
-                        {a}
-                      </button>
-                    );
-                  })}
+
+              {selectedMode === "compression" && (
+                <>
+                  <div>
+                    <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                      Alignment
+                    </label>
+                    <div className="flex gap-1">
+                      {["ALL", "BULLISH", "BEARISH", "MIXED"].map((a) => {
+                        const c =
+                          a === "ALL"
+                            ? {
+                                bg: "#1e1b2e",
+                                text: "#a78bfa",
+                                border: "#4c3a8a",
+                              }
+                            : alignmentColor(a);
+                        return (
+                          <button
+                            key={a}
+                            onClick={() => setFilterAlignment(a)}
+                            className="px-2.5 py-1 rounded text-[10px] font-semibold tracking-wide border transition-all"
+                            style={{
+                              borderColor:
+                                filterAlignment === a ? c.border : "#2a2a3e",
+                              background:
+                                filterAlignment === a ? c.bg : "transparent",
+                              color: filterAlignment === a ? c.text : "#4a4a6a",
+                            }}
+                          >
+                            {a}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                      Max Spread:{" "}
+                      <span style={{ color: spreadColor(maxSpread) }}>
+                        {maxSpread.toFixed(1)}%
+                      </span>
+                    </label>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={3.0}
+                      step={0.1}
+                      value={maxSpread}
+                      onChange={(e) => setMaxSpread(parseFloat(e.target.value))}
+                      className="w-36 accent-purple-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              {selectedMode === "full_setup" && (
+                <div>
+                  <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                    Min Composite:{" "}
+                    <span style={{ color: scoreColor(minComposite) }}>
+                      {minComposite}
+                    </span>
+                  </label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    step={5}
+                    value={minComposite}
+                    onChange={(e) => setMinComposite(parseInt(e.target.value))}
+                    className="w-36 accent-purple-500"
+                  />
                 </div>
-              </div>
-              <div>
-                <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
-                  Max Spread:{" "}
-                  <span style={{ color: spreadColor(maxSpread) }}>
-                    {maxSpread.toFixed(1)}%
-                  </span>
-                </label>
-                <input
-                  type="range"
-                  min={0.1}
-                  max={3.0}
-                  step={0.1}
-                  value={maxSpread}
-                  onChange={(e) => setMaxSpread(parseFloat(e.target.value))}
-                  className="w-36 accent-purple-500"
-                />
-              </div>
+              )}
+
               <div className="ml-auto text-xs text-gray-500">
-                {filtered.length} stocks
+                {visibleCount} stocks
               </div>
             </div>
 
-            {/* Results table */}
-            <div className="overflow-x-auto border border-[#1a1a2e] rounded-md">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-[#0e0e1a]">
-                    {[
-                      { key: "ticker", label: "Ticker" },
-                      { key: "name", label: "Name" },
-                      {
-                        key: "market_cap_m",
-                        label: "MC ($M)",
-                        sortable: true,
-                      },
-                      { key: "close", label: "Close", sortable: true },
-                      { key: "spread_pct", label: "Spread", sortable: true },
-                      { key: "alignment", label: "Alignment" },
-                      { key: "score", label: "Score", sortable: true },
-                    ].map((col) => (
-                      <th
-                        key={col.key}
-                        onClick={() =>
-                          col.sortable &&
-                          handleSort(col.key as keyof CompressionRow)
-                        }
-                        className={`px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap ${col.sortable ? "cursor-pointer hover:text-gray-400" : ""}`}
-                      >
-                        {col.label}{" "}
-                        {col.sortable &&
-                          (sortBy === col.key
-                            ? sortDir === "asc"
-                              ? "up"
-                              : "down"
-                            : "")}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r, i) => (
-                    <tr
-                      key={r.id}
-                      className={`${i % 2 === 0 ? "bg-[#0a0a12]" : "bg-[#0e0e18]"} hover:bg-[#14142a] transition-colors`}
-                    >
-                      <td className="px-3 py-2 font-bold">
-                        <a
-                          href={`https://finance.yahoo.com/quote/${r.ticker}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-purple-400 hover:underline"
+            {/* === COMPRESSION TABLE === */}
+            {selectedMode === "compression" && (
+              <div className="overflow-x-auto border border-[#1a1a2e] rounded-md">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#0e0e1a]">
+                      {[
+                        { key: "ticker", label: "Ticker" },
+                        { key: "name", label: "Name" },
+                        {
+                          key: "market_cap_m",
+                          label: "MC ($M)",
+                          sortable: true,
+                        },
+                        { key: "close", label: "Close", sortable: true },
+                        { key: "spread_pct", label: "Spread", sortable: true },
+                        { key: "alignment", label: "Alignment" },
+                        { key: "score", label: "Score", sortable: true },
+                      ].map((col) => (
+                        <th
+                          key={col.key}
+                          onClick={() => col.sortable && handleSort(col.key)}
+                          className={`px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap ${col.sortable ? "cursor-pointer hover:text-gray-400" : ""}`}
                         >
-                          {r.ticker}
-                        </a>
-                      </td>
-                      <td className="px-3 py-2 text-gray-500 max-w-[200px] truncate">
-                        {r.name}
-                      </td>
-                      <td className="px-3 py-2 tabular-nums">
-                        ${r.market_cap_m}
-                      </td>
-                      <td className="px-3 py-2 tabular-nums font-semibold">
-                        ${r.close.toFixed(2)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-14 h-1.5 bg-[#1e1e2e] rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${Math.min((r.spread_pct / maxSpread) * 100, 100)}%`,
-                                background: spreadColor(r.spread_pct),
-                              }}
-                            />
-                          </div>
-                          <span
-                            className="font-semibold tabular-nums"
-                            style={{ color: spreadColor(r.spread_pct) }}
-                          >
-                            {r.spread_pct.toFixed(2)}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <span
-                          className="px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wide border"
-                          style={{
-                            background: alignmentColor(r.alignment).bg,
-                            color: alignmentColor(r.alignment).text,
-                            borderColor: alignmentColor(r.alignment).border,
-                          }}
-                        >
-                          {r.alignment}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 tabular-nums text-gray-300 font-semibold">
-                        {r.score.toFixed(0)}
-                      </td>
+                          {col.label}{" "}
+                          {col.sortable &&
+                            (sortBy === col.key
+                              ? sortDir === "asc"
+                                ? "up"
+                                : "down"
+                              : "")}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredCompression.map((r, i) => (
+                      <tr
+                        key={r.id}
+                        className={`${i % 2 === 0 ? "bg-[#0a0a12]" : "bg-[#0e0e18]"} hover:bg-[#14142a] transition-colors`}
+                      >
+                        <td className="px-3 py-2 font-bold">
+                          <a
+                            href={`https://finance.yahoo.com/quote/${r.ticker}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-400 hover:underline"
+                          >
+                            {r.ticker}
+                          </a>
+                        </td>
+                        <td className="px-3 py-2 text-gray-500 max-w-[200px] truncate">
+                          {r.name}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums">
+                          ${r.market_cap_m}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums font-semibold">
+                          ${r.close.toFixed(2)}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-14 h-1.5 bg-[#1e1e2e] rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${Math.min((r.spread_pct / maxSpread) * 100, 100)}%`,
+                                  background: spreadColor(r.spread_pct),
+                                }}
+                              />
+                            </div>
+                            <span
+                              className="font-semibold tabular-nums"
+                              style={{ color: spreadColor(r.spread_pct) }}
+                            >
+                              {r.spread_pct.toFixed(2)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className="px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wide border"
+                            style={{
+                              background: alignmentColor(r.alignment).bg,
+                              color: alignmentColor(r.alignment).text,
+                              borderColor: alignmentColor(r.alignment).border,
+                            }}
+                          >
+                            {r.alignment}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 tabular-nums font-semibold">
+                          <span style={{ color: scoreColor(r.score) }}>
+                            {r.score.toFixed(0)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* === FULL_SETUP TABLE === */}
+            {selectedMode === "full_setup" && (
+              <div className="overflow-x-auto border border-[#1a1a2e] rounded-md">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#0e0e1a]">
+                      {[
+                        { key: "ticker", label: "Ticker" },
+                        { key: "name", label: "Name" },
+                        {
+                          key: "market_cap_m",
+                          label: "MC ($M)",
+                          sortable: true,
+                        },
+                        {
+                          key: "composite_score",
+                          label: "Composite",
+                          sortable: true,
+                        },
+                        { key: "alignment_label", label: "Alignment" },
+                        {
+                          key: "flat_distance_pct",
+                          label: "Flat %",
+                          sortable: true,
+                        },
+                        { key: "squeeze_active", label: "Squeeze" },
+                        {
+                          key: "weekly_score",
+                          label: "Weekly",
+                          sortable: true,
+                        },
+                        {
+                          key: "base_break_active",
+                          label: "Base Break",
+                        },
+                        {
+                          key: "volume_label",
+                          label: "Volume",
+                        },
+                      ].map((col) => (
+                        <th
+                          key={col.key}
+                          onClick={() => col.sortable && handleSort(col.key)}
+                          className={`px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap ${col.sortable ? "cursor-pointer hover:text-gray-400" : ""}`}
+                        >
+                          {col.label}{" "}
+                          {col.sortable &&
+                            (sortBy === col.key
+                              ? sortDir === "asc"
+                                ? "up"
+                                : "down"
+                              : "")}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredFullSetup.map((r, i) => (
+                      <tr
+                        key={r.id}
+                        className={`${i % 2 === 0 ? "bg-[#0a0a12]" : "bg-[#0e0e18]"} hover:bg-[#14142a] transition-colors`}
+                      >
+                        <td className="px-3 py-2 font-bold">
+                          <a
+                            href={`https://finance.yahoo.com/quote/${r.ticker}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-400 hover:underline"
+                          >
+                            {r.ticker}
+                          </a>
+                        </td>
+                        <td className="px-3 py-2 text-gray-500 max-w-[180px] truncate">
+                          {r.name}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums">
+                          ${r.market_cap_m}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums font-bold">
+                          <span style={{ color: scoreColor(r.composite_score) }}>
+                            {r.composite_score.toFixed(1)}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border whitespace-nowrap"
+                            style={{
+                              background: alignmentColor(r.alignment_label).bg,
+                              color: alignmentColor(r.alignment_label).text,
+                              borderColor: alignmentColor(r.alignment_label)
+                                .border,
+                            }}
+                          >
+                            {r.alignment_label} ({r.alignment_count}/3)
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 tabular-nums">
+                          <span
+                            className={
+                              r.flat_is_inside_band
+                                ? "text-green-400 font-semibold"
+                                : "text-gray-400"
+                            }
+                          >
+                            {r.flat_distance_pct.toFixed(2)}%
+                            {r.flat_is_inside_band && " in"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          {r.squeeze_active ? (
+                            <span className="text-green-400 font-bold">
+                              YES{" "}
+                              <span className="text-gray-500 font-normal">
+                                ({r.squeeze_overhead_ma})
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-gray-600">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 tabular-nums">
+                          <span style={{ color: scoreColor(r.weekly_score) }}>
+                            {r.weekly_score.toFixed(0)}
+                          </span>
+                          <span className="text-gray-600 text-[10px] ml-1">
+                            ({r.weekly_alignment_count}/3
+                            {r.weekly_cross && " +X"})
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          {r.base_break_active ? (
+                            <span className="text-green-400 font-bold">
+                              YES{" "}
+                              <span className="text-gray-500 font-normal">
+                                ({r.base_break_years.toFixed(1)}y)
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-gray-600">-</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span
+                            className={
+                              r.volume_is_anomaly
+                                ? "text-yellow-400 font-bold"
+                                : "text-gray-400"
+                            }
+                          >
+                            {r.volume_label}{" "}
+                            <span className="text-gray-600 text-[10px]">
+                              ({r.volume_ratio.toFixed(2)}x)
+                            </span>
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
         {/* ================================================================
             RECURRING TICKERS TAB
             ================================================================ */}
-        {activeTab === "recurring" && (
+        {activeTab === "recurring" && scanRuns.length > 0 && (
           <div>
             <div className="flex items-end gap-6 mb-5">
               <div>
                 <h2 className="text-sm font-bold text-purple-400 tracking-wider mb-1">
-                  RECURRING TICKERS
+                  RECURRING TICKERS ({MODE_LABELS[selectedMode]})
                 </h2>
                 <p className="text-gray-600 text-[11px]">
-                  Tickers appearing in multiple recent compression scans -
-                  persistent compression often precedes a breakout.
+                  Tickers appearing in multiple recent {selectedMode} scans -
+                  persistence often precedes a meaningful move.
                 </p>
               </div>
               <div>
@@ -692,11 +953,12 @@ export default function Dashboard() {
                         "Ticker",
                         "Name",
                         "Appearances",
-                        "Spread Trend",
-                        "Latest Spread",
-                        "Avg Spread",
-                        "Alignment",
-                        "Close",
+                        "Score Trend",
+                        "Latest Score",
+                        "Avg Score",
+                        ...(selectedMode === "compression"
+                          ? ["Spread", "Alignment"]
+                          : []),
                         "MC ($M)",
                       ].map((h) => (
                         <th
@@ -736,8 +998,8 @@ export default function Dashboard() {
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex items-end gap-[2px] h-4">
-                            {r.spreadTrend.map((s, idx) => {
-                              const maxS = Math.max(...r.spreadTrend, 1);
+                            {r.scoreTrend.map((s, idx) => {
+                              const maxS = Math.max(...r.scoreTrend, 1);
                               const height = Math.max((s / maxS) * 16, 2);
                               return (
                                 <div
@@ -746,9 +1008,9 @@ export default function Dashboard() {
                                     width: 4,
                                     height,
                                     borderRadius: 1,
-                                    background: spreadColor(s),
+                                    background: scoreColor(s),
                                     opacity:
-                                      idx === r.spreadTrend.length - 1
+                                      idx === r.scoreTrend.length - 1
                                         ? 1
                                         : 0.5,
                                   }}
@@ -757,33 +1019,47 @@ export default function Dashboard() {
                             })}
                           </div>
                         </td>
-                        <td className="px-3 py-2">
-                          <span
-                            className="font-semibold tabular-nums"
-                            style={{ color: spreadColor(r.latestSpread) }}
-                          >
-                            {r.latestSpread.toFixed(2)}%
+                        <td className="px-3 py-2 tabular-nums font-semibold">
+                          <span style={{ color: scoreColor(r.latestScore) }}>
+                            {r.latestScore.toFixed(1)}
                           </span>
                         </td>
                         <td className="px-3 py-2 tabular-nums text-gray-400">
-                          {r.avgSpread.toFixed(2)}%
+                          {r.avgScore.toFixed(1)}
                         </td>
-                        <td className="px-3 py-2">
-                          <span
-                            className="px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wide border"
-                            style={{
-                              background: alignmentColor(r.latestAlignment).bg,
-                              color: alignmentColor(r.latestAlignment).text,
-                              borderColor: alignmentColor(r.latestAlignment)
-                                .border,
-                            }}
-                          >
-                            {r.latestAlignment}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 tabular-nums font-semibold">
-                          ${r.latestClose.toFixed(2)}
-                        </td>
+                        {selectedMode === "compression" && (
+                          <>
+                            <td className="px-3 py-2">
+                              {r.latestSpread !== null && (
+                                <span
+                                  className="font-semibold tabular-nums"
+                                  style={{ color: spreadColor(r.latestSpread) }}
+                                >
+                                  {r.latestSpread.toFixed(2)}%
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2">
+                              {r.latestAlignment && (
+                                <span
+                                  className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide border"
+                                  style={{
+                                    background: alignmentColor(
+                                      r.latestAlignment,
+                                    ).bg,
+                                    color: alignmentColor(r.latestAlignment)
+                                      .text,
+                                    borderColor: alignmentColor(
+                                      r.latestAlignment,
+                                    ).border,
+                                  }}
+                                >
+                                  {r.latestAlignment}
+                                </span>
+                              )}
+                            </td>
+                          </>
+                        )}
                         <td className="px-3 py-2 tabular-nums">
                           ${r.marketCapM}
                         </td>
@@ -805,12 +1081,21 @@ export default function Dashboard() {
               SCAN PARAMETERS
             </h2>
             <p className="text-gray-500 text-xs mb-6 leading-relaxed">
-              Configure the market-cap range, then copy the command and run it
-              in PowerShell. Spread, alignment, and SMA50 gates are baked into
-              the compression mode (config.py). Results land in Supabase and
-              appear here automatically.
+              Mode is selected in the header. Set the market-cap range below
+              and click Run Scan Now. The local{" "}
+              <code>scanner_worker.py</code> picks up the request from
+              Supabase, runs the scanner, and the dashboard reloads when it
+              finishes.
             </p>
             <div className="flex flex-col gap-5">
+              <div>
+                <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1.5">
+                  Mode (set in header)
+                </label>
+                <div className="bg-[#12121e] border border-[#2a2a3e] rounded px-3 py-2 text-sm w-40 text-purple-300">
+                  {MODE_LABELS[selectedMode]}
+                </div>
+              </div>
               <div>
                 <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1.5">
                   Min Market Cap (millions)
@@ -833,6 +1118,7 @@ export default function Dashboard() {
                   className="bg-[#12121e] border border-[#2a2a3e] rounded px-3 py-2 text-sm w-40 outline-none focus:border-purple-500"
                 />
               </div>
+
               <div className="mt-2 flex items-center gap-3">
                 <button
                   onClick={handleRunScan}
@@ -843,11 +1129,11 @@ export default function Dashboard() {
                   }
                   className="px-4 py-2 rounded text-xs font-semibold tracking-wide border transition-all bg-purple-500/15 border-purple-500/60 text-purple-300 hover:bg-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {!activeRequest && "Run Scan Now"}
+                  {!activeRequest && `Run ${MODE_LABELS[selectedMode]} Scan`}
                   {activeRequest?.status === "pending" &&
                     "Queued (waiting for worker)..."}
                   {activeRequest?.status === "running" && "Scanning..."}
-                  {activeRequest?.status === "completed" && "Done — reloading"}
+                  {activeRequest?.status === "completed" && "Done - reloading"}
                   {activeRequest?.status === "failed" && "Failed"}
                 </button>
 
@@ -861,24 +1147,25 @@ export default function Dashboard() {
                 )}
               </div>
 
-              {/* Status / error display */}
               {activeRequest && (
-                <div className="mt-3 text-[11px]">
+                <div className="text-[11px]">
                   {activeRequest.status === "pending" && (
                     <p className="text-gray-500">
-                      Queued at{" "}
+                      Queued {activeRequest.mode} at{" "}
                       {new Date(activeRequest.requested_at).toLocaleTimeString()}
-                      . Make sure <code>scanner_worker.py</code> is running
-                      locally.
+                      . Make sure <code>scanner_worker.py</code> is running.
                     </p>
                   )}
                   {activeRequest.status === "running" && (
                     <p className="text-yellow-400">
-                      Scan started at{" "}
+                      {activeRequest.mode} scan started at{" "}
                       {activeRequest.started_at
                         ? new Date(activeRequest.started_at).toLocaleTimeString()
                         : "?"}
-                      . This usually takes 2-5 minutes for a full universe scan.
+                      .{" "}
+                      {activeRequest.mode === "full_setup"
+                        ? "Full setup pulls 5y of data per ticker - first run may take 5-10 min."
+                        : "2-5 minutes typical."}
                     </p>
                   )}
                   {activeRequest.status === "completed" && (
@@ -895,15 +1182,11 @@ export default function Dashboard() {
               )}
 
               <p className="text-[11px] text-gray-600 mt-4 leading-relaxed border-t border-[#1a1a2e] pt-3">
-                The Run button writes a request to Supabase. A local worker
-                process picks it up and runs the scanner. Start the worker once
-                in a terminal:
-                <br />
+                Worker setup: open a terminal once and run{" "}
                 <code className="text-gray-400">
                   cd C:\Coding\ema-scanner; python scanner_worker.py
                 </code>
-                <br />
-                Leave that terminal open while you want the button to work.
+                . Leave it open while you want the Run button to work.
               </p>
             </div>
           </div>
@@ -912,10 +1195,10 @@ export default function Dashboard() {
         {/* ================================================================
             HISTORY TAB
             ================================================================ */}
-        {activeTab === "history" && (
+        {activeTab === "history" && scanRuns.length > 0 && (
           <div>
             <h2 className="text-sm font-bold text-purple-400 tracking-wider mb-5">
-              SCAN HISTORY
+              {MODE_LABELS[selectedMode].toUpperCase()} SCAN HISTORY
             </h2>
             <div className="border border-[#1a1a2e] rounded-md overflow-hidden">
               <table className="w-full">
@@ -924,7 +1207,6 @@ export default function Dashboard() {
                     {[
                       "#",
                       "Date",
-                      "Mode",
                       "Regime",
                       "MC Range",
                       "Universe",
@@ -949,9 +1231,6 @@ export default function Dashboard() {
                       <td className="px-3 py-2.5 text-gray-600">#{run.id}</td>
                       <td className="px-3 py-2.5">
                         {new Date(run.scanned_at).toLocaleString()}
-                      </td>
-                      <td className="px-3 py-2.5 text-purple-400">
-                        {run.mode}
                       </td>
                       <td
                         className="px-3 py-2.5"
