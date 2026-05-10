@@ -636,30 +636,29 @@ export default function Dashboard() {
                   <thead>
                     <tr className="bg-[#0e0e1a]">
                       {[
-                        { key: "ticker", label: "Ticker" },
-                        { key: "name", label: "Name" },
-                        {
-                          key: "market_cap_m",
-                          label: "MC ($M)",
-                          sortable: true,
-                        },
+                        { key: "ticker", label: "Ticker", sortable: true },
+                        { key: "name", label: "Name", sortable: true },
+                        { key: "market_cap_m", label: "MC ($M)", sortable: true },
                         { key: "close", label: "Close", sortable: true },
                         { key: "spread_pct", label: "Spread", sortable: true },
-                        { key: "alignment", label: "Alignment" },
+                        { key: "alignment", label: "Alignment", sortable: true },
                         { key: "score", label: "Score", sortable: true },
                       ].map((col) => (
                         <th
                           key={col.key}
                           onClick={() => col.sortable && handleSort(col.key)}
-                          className={`px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap ${col.sortable ? "cursor-pointer hover:text-gray-400" : ""}`}
+                          className={`px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap select-none ${col.sortable ? "cursor-pointer hover:text-gray-400" : ""}`}
                         >
-                          {col.label}{" "}
-                          {col.sortable &&
-                            (sortBy === col.key
-                              ? sortDir === "asc"
-                                ? "up"
-                                : "down"
-                              : "")}
+                          {col.label}
+                          {col.sortable && (
+                            <span className="ml-1 text-[9px]">
+                              {sortBy === col.key
+                                ? sortDir === "asc"
+                                  ? "▲"
+                                  : "▼"
+                                : "⇅"}
+                            </span>
+                          )}
                         </th>
                       ))}
                     </tr>
@@ -739,51 +738,35 @@ export default function Dashboard() {
                   <thead>
                     <tr className="bg-[#0e0e1a]">
                       {[
-                        { key: "ticker", label: "Ticker" },
-                        { key: "name", label: "Name" },
-                        {
-                          key: "market_cap_m",
-                          label: "MC ($M)",
-                          sortable: true,
-                        },
-                        {
-                          key: "composite_score",
-                          label: "Composite",
-                          sortable: true,
-                        },
-                        { key: "alignment_label", label: "Alignment" },
-                        {
-                          key: "flat_distance_pct",
-                          label: "Flat %",
-                          sortable: true,
-                        },
-                        { key: "squeeze_active", label: "Squeeze" },
-                        {
-                          key: "weekly_score",
-                          label: "Weekly",
-                          sortable: true,
-                        },
-                        {
-                          key: "base_break_active",
-                          label: "Base Break",
-                        },
-                        {
-                          key: "volume_label",
-                          label: "Volume",
-                        },
+                        // key MUST match a numeric/comparable field on FullSetupRow.
+                        // For boolean signals we sort by their score (continuous) or
+                        // _years (more useful than yes/no).
+                        { key: "ticker", label: "Ticker", sortable: true },
+                        { key: "name", label: "Name", sortable: true },
+                        { key: "market_cap_m", label: "MC ($M)", sortable: true },
+                        { key: "composite_score", label: "Composite", sortable: true },
+                        { key: "alignment_count", label: "Alignment", sortable: true },
+                        { key: "flat_distance_pct", label: "Flat %", sortable: true },
+                        { key: "squeeze_score", label: "Squeeze", sortable: true },
+                        { key: "weekly_score", label: "Weekly", sortable: true },
+                        { key: "base_break_years", label: "Base Break", sortable: true },
+                        { key: "volume_ratio", label: "Volume", sortable: true },
                       ].map((col) => (
                         <th
                           key={col.key}
                           onClick={() => col.sortable && handleSort(col.key)}
-                          className={`px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap ${col.sortable ? "cursor-pointer hover:text-gray-400" : ""}`}
+                          className={`px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap select-none ${col.sortable ? "cursor-pointer hover:text-gray-400" : ""}`}
                         >
-                          {col.label}{" "}
-                          {col.sortable &&
-                            (sortBy === col.key
-                              ? sortDir === "asc"
-                                ? "up"
-                                : "down"
-                              : "")}
+                          {col.label}
+                          {col.sortable && (
+                            <span className="ml-1 text-[9px]">
+                              {sortBy === col.key
+                                ? sortDir === "asc"
+                                  ? "▲"
+                                  : "▼"
+                                : "⇅"}
+                            </span>
+                          )}
                         </th>
                       ))}
                     </tr>
