@@ -24,6 +24,19 @@ export interface ScanRun {
   kept_count: number;
 }
 
+export interface ScanRequest {
+  id: number;
+  requested_at: string;
+  mode: string;
+  min_market_cap_m: number | null;
+  max_market_cap_m: number | null;
+  status: "pending" | "running" | "completed" | "failed" | string;
+  started_at: string | null;
+  completed_at: string | null;
+  scan_run_id: number | null;
+  error_message: string | null;
+}
+
 export interface ScanResult {
   id: number;
   scan_run_id: number;

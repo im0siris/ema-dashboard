@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import {
   supabase,
   ScanRun,
+  ScanRequest,
   ScanResult,
   CompressionRow,
   asCompressionRow,
@@ -96,24 +97,90 @@ export default function Dashboard() {
   const [configMinMc, setConfigMinMc] = useState(200);
   const [configMaxMc, setConfigMaxMc] = useState(1000);
 
-  // ---- Load scan runs (compression mode only for now) on mount ----
-  useEffect(() => {
-    async function loadRuns() {
-      const { data } = await supabase
-        .from("scan_runs")
-        .select("*")
-        .eq("mode", COMPRESSION_MODE)
-        .order("scanned_at", { ascending: false })
-        .limit(50);
+  // Scan-request (UI-triggered run) state
+  const [activeRequest, setActiveRequest] = useState<ScanRequest | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
 
-      if (data && data.length > 0) {
-        setScanRuns(data);
-        setSelectedRunId(data[0].id);
-      }
-      setLoading(false);
+  // ---- Load scan runs (compression mode only for now) ----
+  async function loadRuns(selectLatest = false) {
+    const { data } = await supabase
+      .from("scan_runs")
+      .select("*")
+      .eq("mode", COMPRESSION_MODE)
+      .order("scanned_at", { ascending: false })
+      .limit(50);
+
+    if (data && data.length > 0) {
+      setScanRuns(data);
+      if (selectLatest || !selectedRunId) setSelectedRunId(data[0].id);
     }
+    setLoading(false);
+  }
+
+  useEffect(() => {
     loadRuns();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ---- Poll the active scan request until it terminates ----
+  useEffect(() => {
+    if (!activeRequest) return;
+    if (
+      activeRequest.status === "completed" ||
+      activeRequest.status === "failed"
+    )
+      return;
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("scan_requests")
+        .select("*")
+        .eq("id", activeRequest.id)
+        .single();
+
+      if (!data) return;
+      setActiveRequest(data);
+
+      if (data.status === "completed") {
+        await loadRuns(true);
+        if (data.scan_run_id) {
+          setSelectedRunId(data.scan_run_id);
+        }
+        // Linger on the "Done!" badge briefly, then clear.
+        setTimeout(() => setActiveRequest(null), 2500);
+      } else if (data.status === "failed") {
+        setRunError(data.error_message ?? "Scan failed (no error message).");
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRequest?.id, activeRequest?.status]);
+
+  // ---- Run Scan handler ----
+  async function handleRunScan() {
+    setRunError(null);
+    const { data, error } = await supabase
+      .from("scan_requests")
+      .insert({
+        mode: COMPRESSION_MODE,
+        min_market_cap_m: configMinMc,
+        max_market_cap_m: configMaxMc,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      setRunError(`Could not queue scan: ${error?.message ?? "unknown error"}`);
+      return;
+    }
+    setActiveRequest(data as ScanRequest);
+  }
+
+  function dismissRequest() {
+    setActiveRequest(null);
+    setRunError(null);
+  }
 
   // ---- Load results when selected run changes ----
   useEffect(() => {
@@ -293,6 +360,27 @@ export default function Dashboard() {
               }}
             >
               {currentRun.regime_state}
+            </span>
+          )}
+          {activeRequest && (
+            <span
+              className={`text-[10px] border rounded px-2 py-[2px] uppercase tracking-wider flex items-center gap-1.5 ${
+                activeRequest.status === "running" ||
+                activeRequest.status === "pending"
+                  ? "border-yellow-500/50 bg-yellow-500/10 text-yellow-300"
+                  : activeRequest.status === "completed"
+                    ? "border-green-500/50 bg-green-500/10 text-green-300"
+                    : "border-red-500/50 bg-red-500/10 text-red-300"
+              }`}
+            >
+              {(activeRequest.status === "pending" ||
+                activeRequest.status === "running") && (
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
+              )}
+              {activeRequest.status === "pending" && "Queued"}
+              {activeRequest.status === "running" && "Scanning..."}
+              {activeRequest.status === "completed" && "Done"}
+              {activeRequest.status === "failed" && "Failed"}
             </span>
           )}
         </div>
@@ -745,32 +833,78 @@ export default function Dashboard() {
                   className="bg-[#12121e] border border-[#2a2a3e] rounded px-3 py-2 text-sm w-40 outline-none focus:border-purple-500"
                 />
               </div>
-              <div className="mt-2">
-                <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1.5">
-                  Terminal Command
-                </label>
-                <div className="bg-[#12121e] border border-[#2a2a3e] rounded p-3 text-green-400 text-xs flex items-center justify-between gap-3">
-                  <span>
-                    <span className="text-gray-600">$</span> python scanner.py
-                    --mode compression --min-mc {configMinMc} --max-mc{" "}
-                    {configMaxMc}
-                  </span>
+              <div className="mt-2 flex items-center gap-3">
+                <button
+                  onClick={handleRunScan}
+                  disabled={
+                    !!activeRequest &&
+                    (activeRequest.status === "pending" ||
+                      activeRequest.status === "running")
+                  }
+                  className="px-4 py-2 rounded text-xs font-semibold tracking-wide border transition-all bg-purple-500/15 border-purple-500/60 text-purple-300 hover:bg-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {!activeRequest && "Run Scan Now"}
+                  {activeRequest?.status === "pending" &&
+                    "Queued (waiting for worker)..."}
+                  {activeRequest?.status === "running" && "Scanning..."}
+                  {activeRequest?.status === "completed" && "Done — reloading"}
+                  {activeRequest?.status === "failed" && "Failed"}
+                </button>
+
+                {activeRequest && activeRequest.status !== "running" && (
                   <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        `python scanner.py --mode compression --min-mc ${configMinMc} --max-mc ${configMaxMc}`,
-                      )
-                    }
-                    className="px-2 py-1 bg-[#1e1b2e] border border-[#4c3a8a] rounded text-purple-400 text-[10px] font-semibold hover:bg-[#2a2548] transition-colors whitespace-nowrap"
+                    onClick={dismissRequest}
+                    className="text-[11px] text-gray-500 hover:text-gray-300 underline-offset-2 hover:underline"
                   >
-                    Copy
+                    Dismiss
                   </button>
-                </div>
-                <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">
-                  Run this in <code>C:\Coding\ema-scanner\</code>. After the
-                  scan completes, refresh this page.
-                </p>
+                )}
               </div>
+
+              {/* Status / error display */}
+              {activeRequest && (
+                <div className="mt-3 text-[11px]">
+                  {activeRequest.status === "pending" && (
+                    <p className="text-gray-500">
+                      Queued at{" "}
+                      {new Date(activeRequest.requested_at).toLocaleTimeString()}
+                      . Make sure <code>scanner_worker.py</code> is running
+                      locally.
+                    </p>
+                  )}
+                  {activeRequest.status === "running" && (
+                    <p className="text-yellow-400">
+                      Scan started at{" "}
+                      {activeRequest.started_at
+                        ? new Date(activeRequest.started_at).toLocaleTimeString()
+                        : "?"}
+                      . This usually takes 2-5 minutes for a full universe scan.
+                    </p>
+                  )}
+                  {activeRequest.status === "completed" && (
+                    <p className="text-green-400">
+                      Done. Loading run #{activeRequest.scan_run_id}...
+                    </p>
+                  )}
+                  {activeRequest.status === "failed" && runError && (
+                    <pre className="text-red-400 bg-[#1a0e10] border border-red-900/40 rounded p-2 max-h-40 overflow-auto whitespace-pre-wrap break-words">
+                      {runError}
+                    </pre>
+                  )}
+                </div>
+              )}
+
+              <p className="text-[11px] text-gray-600 mt-4 leading-relaxed border-t border-[#1a1a2e] pt-3">
+                The Run button writes a request to Supabase. A local worker
+                process picks it up and runs the scanner. Start the worker once
+                in a terminal:
+                <br />
+                <code className="text-gray-400">
+                  cd C:\Coding\ema-scanner; python scanner_worker.py
+                </code>
+                <br />
+                Leave that terminal open while you want the button to work.
+              </p>
             </div>
           </div>
         )}
