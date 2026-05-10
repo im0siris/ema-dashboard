@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import yfinance, pandas, dotenv; print\\('deps OK:', yfinance.__version__, pandas.__version__\\)\")",
+      "Bash(python -c \"import pytest; print\\('pytest:', pytest.__version__\\)\")",
+      "Bash(python -c \"import pyarrow; print\\('pyarrow:', pyarrow.__version__\\)\")",
+      "Bash(git config *)",
+      "Bash(python scanner-v2.py --no-db --output legacy/watchlist_v2_baseline.csv)",
+      "Bash(git mv *)",
+      "Bash(python -m pytest -v)",
+      "Bash(python scanner.py --list-modes)",
+      "Bash(python scanner.py --mode compression --min-mc 5000 --max-mc 10000 --no-db --top 10)",
+      "Bash(python scanner.py --mode compression --min-mc 5000 --max-mc 10000 --no-db --top 5)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(python -m pytest tests/test_scorers.py -v)",
+      "Bash(python -m pytest -q)",
+      "Bash(python scanner.py --mode full_setup --min-mc 200000 --max-mc 1000000 --no-db --no-regime --top 5)"
+    ]
+  }
+}
