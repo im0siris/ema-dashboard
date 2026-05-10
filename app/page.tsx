@@ -2,7 +2,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase, ScanRun, ScanResult } from "@/lib/supabase";
+import {
+  supabase,
+  ScanRun,
+  ScanResult,
+  CompressionRow,
+  asCompressionRow,
+} from "@/lib/supabase";
 
 // ==========================================================================
 // Color helpers
@@ -13,7 +19,10 @@ function alignmentColor(a: string) {
     return { bg: "#0d2818", text: "#34d399", border: "#065f26" };
   if (a === "BEARISH")
     return { bg: "#2d1215", text: "#f87171", border: "#7f1d1d" };
-  return { bg: "#1e1b2e", text: "#a78bfa", border: "#4c3a8a" };
+  if (a === "MIXED")
+    return { bg: "#1e1b2e", text: "#a78bfa", border: "#4c3a8a" };
+  // INSUFFICIENT_DATA or other
+  return { bg: "#1a1a24", text: "#6b7280", border: "#2a2a3e" };
 }
 
 function spreadColor(s: number) {
@@ -23,6 +32,18 @@ function spreadColor(s: number) {
   if (s < 2.0) return "#facc15";
   if (s < 2.5) return "#fb923c";
   return "#f87171";
+}
+
+function regimeColor(label: string | null) {
+  if (label === "RISK_ON_FULL")
+    return { bg: "#0d2818", text: "#34d399", border: "#065f26" };
+  if (label === "RISK_ON_SHORT")
+    return { bg: "#162a1c", text: "#a3e635", border: "#3f6212" };
+  if (label === "MIXED")
+    return { bg: "#1e1b2e", text: "#a78bfa", border: "#4c3a8a" };
+  if (label === "RISK_OFF")
+    return { bg: "#2d1215", text: "#f87171", border: "#7f1d1d" };
+  return { bg: "#1a1a24", text: "#6b7280", border: "#2a2a3e" };
 }
 
 // ==========================================================================
@@ -36,20 +57,21 @@ interface RecurringTicker {
   avgSpread: number;
   latestSpread: number;
   latestAlignment: string;
-  latestVolRatio: number;
   latestClose: number;
   marketCapM: number;
-  spreadTrend: number[]; // spread values over consecutive scans (oldest → newest)
+  spreadTrend: number[];
 }
 
 // ==========================================================================
 // Main Dashboard Component
 // ==========================================================================
 
+const COMPRESSION_MODE = "compression";
+
 export default function Dashboard() {
   // Data state
   const [scanRuns, setScanRuns] = useState<ScanRun[]>([]);
-  const [results, setResults] = useState<ScanResult[]>([]);
+  const [results, setResults] = useState<CompressionRow[]>([]);
   const [selectedRunId, setSelectedRunId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -60,27 +82,27 @@ export default function Dashboard() {
   const [minAppearances, setMinAppearances] = useState(3);
   const [loadingRecurring, setLoadingRecurring] = useState(false);
 
-  // Filter state
+  // Filter / UI state
   const [activeTab, setActiveTab] = useState<
     "results" | "recurring" | "config" | "history"
   >("results");
   const [filterAlignment, setFilterAlignment] = useState("ALL");
   const [maxSpread, setMaxSpread] = useState(3.0);
   const [searchTicker, setSearchTicker] = useState("");
-  const [sortBy, setSortBy] = useState<keyof ScanResult>("spread_pct");
+  const [sortBy, setSortBy] = useState<keyof CompressionRow>("spread_pct");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   // Config state
   const [configMinMc, setConfigMinMc] = useState(200);
   const [configMaxMc, setConfigMaxMc] = useState(1000);
-  const [configSpread, setConfigSpread] = useState(3.0);
 
-  // ---- Load scan runs on mount ----
+  // ---- Load scan runs (compression mode only for now) on mount ----
   useEffect(() => {
     async function loadRuns() {
       const { data } = await supabase
         .from("scan_runs")
         .select("*")
+        .eq("mode", COMPRESSION_MODE)
         .order("scanned_at", { ascending: false })
         .limit(50);
 
@@ -101,10 +123,13 @@ export default function Dashboard() {
       const { data } = await supabase
         .from("scan_results")
         .select("*")
-        .eq("scan_run_id", selectedRunId)
-        .order("spread_pct", { ascending: true });
+        .eq("scan_run_id", selectedRunId);
 
-      if (data) setResults(data);
+      if (data) {
+        const rows = (data as ScanResult[]).map(asCompressionRow);
+        rows.sort((a, b) => a.spread_pct - b.spread_pct);
+        setResults(rows);
+      }
     }
     loadResults();
   }, [selectedRunId]);
@@ -116,13 +141,13 @@ export default function Dashboard() {
     async function loadRecurring() {
       setLoadingRecurring(true);
 
-      // Get all results from the last 20 scan runs
       const recentRunIds = scanRuns.slice(0, 20).map((r) => r.id);
 
       const { data } = await supabase
         .from("scan_results")
         .select("*, scan_runs!inner(scanned_at)")
         .in("scan_run_id", recentRunIds)
+        .eq("mode", COMPRESSION_MODE)
         .order("scan_run_id", { ascending: true });
 
       if (!data) {
@@ -130,56 +155,42 @@ export default function Dashboard() {
         return;
       }
 
-      // Group results by ticker
-      const tickerMap = new Map<
-        string,
-        {
-          results: (ScanResult & { scan_runs: { scanned_at: string } })[];
-        }
-      >();
+      type RowWithRun = ScanResult & { scan_runs: { scanned_at: string } };
 
-      for (const row of data as (ScanResult & {
-        scan_runs: { scanned_at: string };
-      })[]) {
-        if (!tickerMap.has(row.ticker)) {
-          tickerMap.set(row.ticker, { results: [] });
-        }
-        tickerMap.get(row.ticker)!.results.push(row);
+      // Group results by ticker
+      const tickerMap = new Map<string, RowWithRun[]>();
+      for (const row of data as RowWithRun[]) {
+        if (!tickerMap.has(row.ticker)) tickerMap.set(row.ticker, []);
+        tickerMap.get(row.ticker)!.push(row);
       }
 
-      // Build recurring tickers list
       const recurring: RecurringTicker[] = [];
-
-      for (const [ticker, { results: rows }] of tickerMap) {
+      for (const [ticker, rows] of tickerMap) {
         if (rows.length < minAppearances) continue;
 
-        // Sort by scan date (oldest first) for trend
         const sorted = rows.sort(
           (a, b) =>
             new Date(a.scan_runs.scanned_at).getTime() -
             new Date(b.scan_runs.scanned_at).getTime(),
         );
-
-        const latest = sorted[sorted.length - 1];
+        const projected = sorted.map(asCompressionRow);
+        const latest = projected[projected.length - 1];
         const avgSpread =
-          sorted.reduce((sum, r) => sum + Number(r.spread_pct), 0) /
-          sorted.length;
+          projected.reduce((sum, r) => sum + r.spread_pct, 0) / projected.length;
 
         recurring.push({
           ticker,
           name: latest.name,
-          appearances: sorted.length,
+          appearances: projected.length,
           avgSpread: Math.round(avgSpread * 100) / 100,
-          latestSpread: Number(latest.spread_pct),
+          latestSpread: latest.spread_pct,
           latestAlignment: latest.alignment,
-          latestVolRatio: Number(latest.volume_ratio),
-          latestClose: Number(latest.close_price),
-          marketCapM: Number(latest.market_cap_m),
-          spreadTrend: sorted.map((r) => Number(r.spread_pct)),
+          latestClose: latest.close,
+          marketCapM: latest.market_cap_m,
+          spreadTrend: projected.map((r) => r.spread_pct),
         });
       }
 
-      // Sort by most appearances, then by lowest average spread
       recurring.sort((a, b) => {
         if (b.appearances !== a.appearances)
           return b.appearances - a.appearances;
@@ -208,7 +219,7 @@ export default function Dashboard() {
       return sortDir === "asc" ? (aVal > bVal ? 1 : -1) : aVal < bVal ? 1 : -1;
     });
 
-  const handleSort = (col: keyof ScanResult) => {
+  const handleSort = (col: keyof CompressionRow) => {
     if (sortBy === col) setSortDir(sortDir === "asc" ? "desc" : "asc");
     else {
       setSortBy(col);
@@ -233,16 +244,20 @@ export default function Dashboard() {
       <div className="min-h-screen bg-[#0a0a12] flex items-center justify-center p-8">
         <div className="text-center font-mono max-w-md">
           <h1 className="text-xl font-bold text-purple-400 mb-4">
-            EMA/SMA SCANNER
+            EMA SCANNER v3
           </h1>
           <p className="text-gray-500 mb-6">
-            No scan data found yet. Run your first scan:
+            No compression scans found yet. Run your first scan:
           </p>
           <code className="block bg-[#12121e] border border-[#2a2a3e] rounded p-4 text-green-400 text-sm">
-            python scanner.py
+            python scanner.py --mode compression
           </code>
           <p className="text-gray-600 text-xs mt-4">
-            Results will appear here automatically.
+            Results will appear here automatically after the run completes.
+          </p>
+          <p className="text-gray-700 text-[10px] mt-3">
+            (If this is your first v3 run, ensure
+            legacy/migrations/001_recreate_tables.sql has been applied.)
           </p>
         </div>
       </div>
@@ -260,9 +275,26 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e88]" />
           <span className="text-[15px] font-bold tracking-wider">
-            EMA/SMA SCANNER
+            EMA SCANNER
           </span>
-          <span className="text-[11px] text-gray-600">v2.0</span>
+          <span className="text-[11px] text-gray-600">v3.0</span>
+          {currentRun && (
+            <span className="text-[10px] text-purple-400 border border-[#4c3a8a] bg-[#1e1b2e] rounded px-2 py-[2px] uppercase tracking-wider">
+              {currentRun.mode}
+            </span>
+          )}
+          {currentRun?.regime_state && (
+            <span
+              className="text-[10px] border rounded px-2 py-[2px] uppercase tracking-wider"
+              style={{
+                background: regimeColor(currentRun.regime_state).bg,
+                color: regimeColor(currentRun.regime_state).text,
+                borderColor: regimeColor(currentRun.regime_state).border,
+              }}
+            >
+              {currentRun.regime_state}
+            </span>
+          )}
         </div>
         {currentRun && (
           <div className="text-[11px] text-gray-500 flex gap-2 flex-wrap justify-end">
@@ -272,12 +304,11 @@ export default function Dashboard() {
             </span>
             <span className="text-gray-700">|</span>
             <span className="text-green-400">
-              {currentRun.total_results} results
+              {currentRun.kept_count} results
             </span>
             <span className="text-gray-700">|</span>
             <span className="text-gray-400">
-              ${currentRun.min_market_cap_m}M–${currentRun.max_market_cap_m}M, ≤
-              {currentRun.max_spread_pct}%
+              ${currentRun.min_market_cap_m}M-${currentRun.max_market_cap_m}M
             </span>
           </div>
         )}
@@ -295,7 +326,7 @@ export default function Dashboard() {
                 : "text-gray-600 border-transparent hover:text-gray-400"
             }`}
           >
-            {tab === "recurring" ? "🔁 Recurring" : tab}
+            {tab === "recurring" ? "Recurring" : tab}
           </button>
         ))}
       </div>
@@ -306,41 +337,44 @@ export default function Dashboard() {
             ================================================================ */}
         {activeTab === "results" && (
           <div>
-            {/* Scan info banner */}
             {currentRun && (
               <div className="mb-4 px-3 py-2 bg-[#0e0e1a] border border-[#1a1a2e] rounded-md text-[11px] text-gray-500 flex gap-4 flex-wrap">
                 <span>Scan #{currentRun.id}</span>
                 <span>
-                  MC:{" "}
-                  <span className="text-gray-300">
-                    ${currentRun.min_market_cap_m}M – $
-                    {currentRun.max_market_cap_m}M
-                  </span>
+                  Mode:{" "}
+                  <span className="text-gray-300">{currentRun.mode}</span>
                 </span>
                 <span>
-                  Max spread:{" "}
+                  MC:{" "}
                   <span className="text-gray-300">
-                    {currentRun.max_spread_pct}%
+                    ${currentRun.min_market_cap_m}M - $
+                    {currentRun.max_market_cap_m}M
                   </span>
                 </span>
                 <span>
                   Universe:{" "}
                   <span className="text-gray-300">
-                    {currentRun.total_universe}
+                    {currentRun.universe_size}
                   </span>
                 </span>
                 <span>
-                  After MC filter:{" "}
-                  <span className="text-gray-300">
-                    {currentRun.total_filtered}
-                  </span>
-                </span>
-                <span>
-                  Results:{" "}
+                  Kept:{" "}
                   <span className="text-green-400">
-                    {currentRun.total_results}
+                    {currentRun.kept_count}
                   </span>
                 </span>
+                {currentRun.regime_state && (
+                  <span>
+                    Regime:{" "}
+                    <span
+                      style={{
+                        color: regimeColor(currentRun.regime_state).text,
+                      }}
+                    >
+                      {currentRun.regime_state}
+                    </span>
+                  </span>
+                )}
               </div>
             )}
 
@@ -417,21 +451,21 @@ export default function Dashboard() {
                     {[
                       { key: "ticker", label: "Ticker" },
                       { key: "name", label: "Name" },
-                      { key: "market_cap_m", label: "MC ($M)", sortable: true },
-                      { key: "close_price", label: "Close", sortable: true },
-                      { key: "spread_pct", label: "Spread", sortable: true },
-                      { key: "alignment", label: "Alignment" },
                       {
-                        key: "volume_ratio",
-                        label: "Vol Ratio",
+                        key: "market_cap_m",
+                        label: "MC ($M)",
                         sortable: true,
                       },
+                      { key: "close", label: "Close", sortable: true },
+                      { key: "spread_pct", label: "Spread", sortable: true },
+                      { key: "alignment", label: "Alignment" },
+                      { key: "score", label: "Score", sortable: true },
                     ].map((col) => (
                       <th
                         key={col.key}
                         onClick={() =>
                           col.sortable &&
-                          handleSort(col.key as keyof ScanResult)
+                          handleSort(col.key as keyof CompressionRow)
                         }
                         className={`px-3 py-2 text-left text-[10px] font-semibold text-gray-600 uppercase tracking-wider border-b border-[#1a1a2e] whitespace-nowrap ${col.sortable ? "cursor-pointer hover:text-gray-400" : ""}`}
                       >
@@ -439,8 +473,8 @@ export default function Dashboard() {
                         {col.sortable &&
                           (sortBy === col.key
                             ? sortDir === "asc"
-                              ? "↑"
-                              : "↓"
+                              ? "up"
+                              : "down"
                             : "")}
                       </th>
                     ))}
@@ -469,7 +503,7 @@ export default function Dashboard() {
                         ${r.market_cap_m}
                       </td>
                       <td className="px-3 py-2 tabular-nums font-semibold">
-                        ${Number(r.close_price).toFixed(2)}
+                        ${r.close.toFixed(2)}
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
@@ -486,7 +520,7 @@ export default function Dashboard() {
                             className="font-semibold tabular-nums"
                             style={{ color: spreadColor(r.spread_pct) }}
                           >
-                            {Number(r.spread_pct).toFixed(2)}%
+                            {r.spread_pct.toFixed(2)}%
                           </span>
                         </div>
                       </td>
@@ -502,20 +536,8 @@ export default function Dashboard() {
                           {r.alignment}
                         </span>
                       </td>
-                      <td
-                        className="px-3 py-2 tabular-nums"
-                        style={{
-                          color:
-                            r.volume_ratio > 1.2
-                              ? "#22c55e"
-                              : r.volume_ratio > 1.0
-                                ? "#a3e635"
-                                : "#6b7280",
-                          fontWeight: r.volume_ratio > 1.2 ? 700 : 400,
-                        }}
-                      >
-                        {Number(r.volume_ratio).toFixed(2)}x{" "}
-                        {r.volume_ratio > 1.2 && "▲"}
+                      <td className="px-3 py-2 tabular-nums text-gray-300 font-semibold">
+                        {r.score.toFixed(0)}
                       </td>
                     </tr>
                   ))}
@@ -527,10 +549,6 @@ export default function Dashboard() {
 
         {/* ================================================================
             RECURRING TICKERS TAB
-            ================================================================
-            Shows stocks that appear in multiple consecutive scans.
-            If a stock keeps showing up with tight MAs day after day,
-            it's building pressure for a breakout.
             ================================================================ */}
         {activeTab === "recurring" && (
           <div>
@@ -540,8 +558,8 @@ export default function Dashboard() {
                   RECURRING TICKERS
                 </h2>
                 <p className="text-gray-600 text-[11px]">
-                  Stocks appearing in multiple scans — persistent compression
-                  signals stronger setups.
+                  Tickers appearing in multiple recent compression scans -
+                  persistent compression often precedes a breakout.
                 </p>
               </div>
               <div>
@@ -569,10 +587,10 @@ export default function Dashboard() {
             {!loadingRecurring && recurringTickers.length === 0 && (
               <div className="text-center py-12 text-gray-600">
                 <p className="text-sm mb-2">
-                  No recurring tickers found with {minAppearances}+ appearances.
+                  No recurring tickers with {minAppearances}+ appearances.
                 </p>
                 <p className="text-xs">
-                  Try lowering the minimum or run more scans over multiple days.
+                  Lower the threshold or run more scans across multiple days.
                 </p>
               </div>
             )}
@@ -590,7 +608,6 @@ export default function Dashboard() {
                         "Latest Spread",
                         "Avg Spread",
                         "Alignment",
-                        "Vol Ratio",
                         "Close",
                         "MC ($M)",
                       ].map((h) => (
@@ -629,7 +646,6 @@ export default function Dashboard() {
                             {r.appearances}x
                           </span>
                         </td>
-                        {/* Mini sparkline showing spread over consecutive scans */}
                         <td className="px-3 py-2">
                           <div className="flex items-end gap-[2px] h-4">
                             {r.spreadTrend.map((s, idx) => {
@@ -677,21 +693,6 @@ export default function Dashboard() {
                             {r.latestAlignment}
                           </span>
                         </td>
-                        <td
-                          className="px-3 py-2 tabular-nums"
-                          style={{
-                            color:
-                              r.latestVolRatio > 1.2
-                                ? "#22c55e"
-                                : r.latestVolRatio > 1.0
-                                  ? "#a3e635"
-                                  : "#6b7280",
-                            fontWeight: r.latestVolRatio > 1.2 ? 700 : 400,
-                          }}
-                        >
-                          {r.latestVolRatio.toFixed(2)}x{" "}
-                          {r.latestVolRatio > 1.2 && "▲"}
-                        </td>
                         <td className="px-3 py-2 tabular-nums font-semibold">
                           ${r.latestClose.toFixed(2)}
                         </td>
@@ -716,8 +717,9 @@ export default function Dashboard() {
               SCAN PARAMETERS
             </h2>
             <p className="text-gray-500 text-xs mb-6 leading-relaxed">
-              Configure parameters below. The terminal command updates live —
-              copy and run it in PowerShell. Results are saved to Supabase and
+              Configure the market-cap range, then copy the command and run it
+              in PowerShell. Spread, alignment, and SMA50 gates are baked into
+              the compression mode (config.py). Results land in Supabase and
               appear here automatically.
             </p>
             <div className="flex flex-col gap-5">
@@ -743,18 +745,6 @@ export default function Dashboard() {
                   className="bg-[#12121e] border border-[#2a2a3e] rounded px-3 py-2 text-sm w-40 outline-none focus:border-purple-500"
                 />
               </div>
-              <div>
-                <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1.5">
-                  Max Spread %
-                </label>
-                <input
-                  type="number"
-                  step={0.1}
-                  value={configSpread}
-                  onChange={(e) => setConfigSpread(Number(e.target.value))}
-                  className="bg-[#12121e] border border-[#2a2a3e] rounded px-3 py-2 text-sm w-40 outline-none focus:border-purple-500"
-                />
-              </div>
               <div className="mt-2">
                 <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1.5">
                   Terminal Command
@@ -762,13 +752,13 @@ export default function Dashboard() {
                 <div className="bg-[#12121e] border border-[#2a2a3e] rounded p-3 text-green-400 text-xs flex items-center justify-between gap-3">
                   <span>
                     <span className="text-gray-600">$</span> python scanner.py
-                    --min-mc {configMinMc} --max-mc {configMaxMc} --spread{" "}
-                    {configSpread}
+                    --mode compression --min-mc {configMinMc} --max-mc{" "}
+                    {configMaxMc}
                   </span>
                   <button
                     onClick={() =>
                       navigator.clipboard.writeText(
-                        `python scanner.py --min-mc ${configMinMc} --max-mc ${configMaxMc} --spread ${configSpread}`,
+                        `python scanner.py --mode compression --min-mc ${configMinMc} --max-mc ${configMaxMc}`,
                       )
                     }
                     className="px-2 py-1 bg-[#1e1b2e] border border-[#4c3a8a] rounded text-purple-400 text-[10px] font-semibold hover:bg-[#2a2548] transition-colors whitespace-nowrap"
@@ -777,8 +767,8 @@ export default function Dashboard() {
                   </button>
                 </div>
                 <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">
-                  Copy and run this command in PowerShell. After the scan
-                  completes, refresh this page to see the new results.
+                  Run this in <code>C:\Coding\ema-scanner\</code>. After the
+                  scan completes, refresh this page.
                 </p>
               </div>
             </div>
@@ -800,11 +790,11 @@ export default function Dashboard() {
                     {[
                       "#",
                       "Date",
+                      "Mode",
+                      "Regime",
                       "MC Range",
-                      "Max Spread",
                       "Universe",
-                      "Filtered",
-                      "Results",
+                      "Kept",
                       "",
                     ].map((h) => (
                       <th
@@ -826,21 +816,26 @@ export default function Dashboard() {
                       <td className="px-3 py-2.5">
                         {new Date(run.scanned_at).toLocaleString()}
                       </td>
-                      <td className="px-3 py-2.5 text-gray-500">
-                        ${run.min_market_cap_m}M – ${run.max_market_cap_m}M
+                      <td className="px-3 py-2.5 text-purple-400">
+                        {run.mode}
+                      </td>
+                      <td
+                        className="px-3 py-2.5"
+                        style={{
+                          color: regimeColor(run.regime_state).text,
+                        }}
+                      >
+                        {run.regime_state ?? "-"}
                       </td>
                       <td className="px-3 py-2.5 text-gray-500">
-                        {run.max_spread_pct}%
+                        ${run.min_market_cap_m}M - ${run.max_market_cap_m}M
                       </td>
                       <td className="px-3 py-2.5 text-gray-500">
-                        {run.total_universe}
-                      </td>
-                      <td className="px-3 py-2.5 text-gray-500">
-                        {run.total_filtered}
+                        {run.universe_size}
                       </td>
                       <td className="px-3 py-2.5">
                         <span className="text-green-400 font-semibold">
-                          {run.total_results}
+                          {run.kept_count}
                         </span>
                       </td>
                       <td className="px-3 py-2.5">

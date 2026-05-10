@@ -1,6 +1,7 @@
 // lib/supabase.ts
-// Creates a Supabase client instance for use throughout the app.
-// We use environment variables so credentials aren't hardcoded.
+// Supabase client + v3 schema types.
+// v3 stores per-scorer outputs in a `scorer_scores` JSONB column so the
+// schema doesn't need to change every time a new scorer is added.
 
 import { createClient } from "@supabase/supabase-js";
 
@@ -9,29 +10,65 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// TypeScript types matching our database schema
+// ---------- v3 Supabase row shapes ----------
+
 export interface ScanRun {
   id: number;
+  invocation_id: string;
   scanned_at: string;
+  mode: string;
+  regime_state: string | null;
   min_market_cap_m: number;
   max_market_cap_m: number;
-  max_spread_pct: number;
-  total_universe: number;
-  total_filtered: number;
-  total_results: number;
+  universe_size: number;
+  kept_count: number;
 }
 
 export interface ScanResult {
   id: number;
   scan_run_id: number;
   ticker: string;
+  name: string | null;
+  market_cap_m: number | null;
+  mode: string;
+  composite_score: number | null;
+  scorer_scores: Record<string, unknown>;
+}
+
+// ---------- Mode-specific projections (extracted from scorer_scores) ----------
+
+export interface CompressionRow {
+  id: number;
+  scan_run_id: number;
+  ticker: string;
   name: string;
   market_cap_m: number;
-  close_price: number;
+  close: number;
   ema9: number;
   ema21: number;
   sma50: number;
   spread_pct: number;
-  alignment: "BULLISH" | "BEARISH" | "MIXED";
-  volume_ratio: number;
+  alignment: "BULLISH" | "BEARISH" | "MIXED" | "INSUFFICIENT_DATA" | string;
+  above_sma50: boolean;
+  score: number;
+}
+
+export function asCompressionRow(r: ScanResult): CompressionRow {
+  const s = r.scorer_scores ?? {};
+  const num = (k: string) => Number(s[k] ?? 0);
+  return {
+    id: r.id,
+    scan_run_id: r.scan_run_id,
+    ticker: r.ticker,
+    name: r.name ?? "",
+    market_cap_m: Number(r.market_cap_m ?? 0),
+    close: num("compression_close"),
+    ema9: num("compression_ema9"),
+    ema21: num("compression_ema21"),
+    sma50: num("compression_sma50"),
+    spread_pct: num("compression_pct"),
+    alignment: String(s["compression_alignment"] ?? "INSUFFICIENT_DATA"),
+    above_sma50: Boolean(s["compression_above_sma50"]),
+    score: num("compression_score"),
+  };
 }
