@@ -1,0 +1,342 @@
+Ticker,Name,MC ($M),Close,EMA9,EMA21,SMA50,Spread %,Alignment,Vol Ratio
+HQL,abrdn Life Sciences Investors Shares of ,438,17.11,16.96,16.96,16.97,0.08,BEARISH,0.91
+MYFW,"First Western Financial, Inc. Common Sto",251,25.86,25.81,25.83,25.84,0.09,BEARISH,0.42
+SAT,Saratoga Investment Corp 6.00% Notes due,387,24.73,24.93,24.94,24.89,0.17,MIXED,0.92
+YORW,York Water Company (The) Common Stock,480,33.31,32.73,32.79,32.78,0.18,MIXED,0.83
+MLP,"Maui Land & Pineapple Company, Inc. Comm",330,16.77,16.93,16.97,16.95,0.19,MIXED,0.87
+GAINN,Gladstone Investment Corporation 5.00% N,959,25.1,25.02,25.03,25.07,0.2,BEARISH,1.06
+RWAYZ,Runway Growth Finance Corp. 8.00% Notes ,904,24.96,25.32,25.34,25.29,0.21,MIXED,1.2
+GNE,Genie Energy Ltd. Class B Common Stock S,385,14.48,14.15,14.12,14.12,0.21,BULLISH,0.73
+FRGE,"Forge Global Holdings, Inc. Common Stock",618,44.67,44.68,44.62,44.58,0.23,BULLISH,1.31
+SSSS,SuRo Capital Corp. Common Stock,239,9.58,9.45,9.43,9.44,0.23,MIXED,0.95
+BRT,BRT Apartments Corp. (MD) Common Stock,278,14.59,14.68,14.71,14.67,0.25,MIXED,0.64
+MIN,MFS Intermediate Income Trust Common Sto,299,2.6,2.6,2.6,2.6,0.26,BEARISH,1.13
+GAINZ,Gladstone Investment Corporation 4.875% ,920,24.08,24.05,24.02,23.98,0.29,BULLISH,0.73
+EFT,Eaton Vance Floating Rate Income Trust C,330,11.35,11.35,11.38,11.35,0.29,MIXED,1.12
+GEGGL,"Great Elm Group, Inc.  7.25% Notes due 2",710,24.5,24.52,24.59,24.59,0.3,BEARISH,1.65
+TACO,Berto Acquisition Corp. Ordinary Shares,371,10.19,10.19,10.19,10.16,0.3,BULLISH,0.5
+FCRX,"Crescent Capital BDC, Inc. 5.00% Notes d",931,25.12,25.1,25.06,25.01,0.32,BULLISH,0.43
+RWAYL,Runway Growth Finance Corp. 7.50% Notes ,906,25.01,25.33,25.33,25.25,0.32,BULLISH,1.98
+INBKZ,First Internet Bancorp 6.0% Fixed-to-Flo,212,24.28,24.64,24.68,24.72,0.33,BEARISH,1.99
+CUB,Lionheart Holdings Class A Ordinary Shar,340,10.7,10.69,10.68,10.65,0.34,BULLISH,1.52
+RGCO,RGC Resources Inc. Common Stock,226,21.77,21.76,21.69,21.7,0.34,MIXED,0.7
+AMSF,"AMERISAFE, Inc. Common Stock",717,37.87,38.27,38.17,38.14,0.35,BULLISH,0.95
+WHFCL,"WhiteHorse Finance, Inc. 7.875% Notes du",589,25.35,25.36,25.35,25.27,0.37,BULLISH,0.14
+SSSSL,SuRo Capital Corp. 6.00% Notes due 2026,598,25.05,25.02,25.0,24.93,0.38,BULLISH,1.14
+MITP,"TPG Mortgage Investment Trust, Inc. 9.50",744,25.18,25.28,25.34,25.38,0.39,BEARISH,0.55
+ARDC,"Ares Dynamic Credit Allocation Fund, Inc",303,13.24,13.32,13.36,13.3,0.4,MIXED,0.89
+SAZ,Saratoga Investment Corp 8.50% Notes due,395,25.18,25.55,25.54,25.45,0.41,BULLISH,0.98
+FTW,EQV Ventures Acquisition Corp. Class A O,470,10.55,10.56,10.55,10.51,0.43,BULLISH,1.26
+SWIM,"Latham Group, Inc. Common Stock",778,6.67,6.57,6.54,6.56,0.45,MIXED,0.79
+VALU,"Value Line, Inc. Common Stock",357,38.01,37.37,37.31,37.48,0.45,MIXED,0.69
+MFIN,Medallion Financial Corp. Common Stock,240,10.29,10.3,10.26,10.31,0.45,MIXED,0.76
+SAY,Saratoga Investment Corp 8.125% Notes du,394,25.15,25.51,25.5,25.39,0.48,BULLISH,1.46
+BMEZ,BlackRock Health Sciences Term Trust Com,201,15.04,15.07,15.15,15.15,0.48,BEARISH,0.54
+GOODO,Gladstone Commercial Corporation 6.00% S,985,20.35,20.35,20.42,20.45,0.49,BEARISH,0.8
+XOMAO,XOMA Royalty Corporation Depositary Shar,314,25.35,25.32,25.31,25.19,0.51,BULLISH,0.65
+BBDC,"Barings BDC, Inc. Common Stock",960,9.15,9.09,9.08,9.04,0.52,BULLISH,0.9
+OOMA,"Ooma, Inc. Common Stock",323,11.73,11.64,11.7,11.66,0.52,MIXED,0.83
+ETD,Ethan Allen Interiors Inc. Common Stock,601,23.56,23.69,23.64,23.56,0.53,BULLISH,0.66
+WEYS,"Weyco Group, Inc. Common Stock",307,31.97,31.74,31.57,31.61,0.53,MIXED,0.89
+TRVG,trivago N.V. American Depositary Shares,204,2.9,2.91,2.89,2.9,0.53,MIXED,1.12
+NEWTI,"NewtekOne, Inc. 8.00% Fixed Rate Senior ",668,25.38,25.39,25.36,25.25,0.56,BULLISH,1.42
+AVBP,"ArriVent BioPharma, Inc. Common Stock",945,23.1,22.16,22.12,22.25,0.57,MIXED,0.76
+MATW,Matthews International Corporation Class,814,26.11,26.22,26.33,26.36,0.57,BEARISH,0.66
+CCNEP,CNB Financial Corporation Depositary Sha,746,25.12,25.11,25.09,24.97,0.57,BULLISH,1.07
+SWKHL,SWK Holdings Corporation 9.00% Senior No,311,25.64,25.62,25.59,25.48,0.57,BULLISH,0.9
+ESEA,Euroseas Ltd. Common Stock (Marshall Isl,392,56.51,55.63,55.34,55.67,0.58,MIXED,1.0
+TRTX,"TPG RE Finance Trust, Inc. Common Stock",698,8.91,8.96,8.99,8.94,0.59,MIXED,0.64
+SAJ,Saratoga Investment Corp 8.00% Notes due,396,25.28,25.68,25.7,25.54,0.6,MIXED,1.57
+OCCIO,"OFS Credit Company, Inc. 6.125% Series C",291,25.07,25.05,25.01,24.9,0.6,BULLISH,0.52
+FWRG,"First Watch Restaurant Group, Inc. Commo",945,15.54,16.42,16.47,16.37,0.61,MIXED,0.74
+IMXI,"International Money Express, Inc. Common",464,15.6,15.54,15.51,15.45,0.61,BULLISH,0.74
+FUNC,First United Corporation Common Stock,245,37.76,38.26,38.31,38.49,0.61,BEARISH,0.7
+SWKH,SWK Holdings Corporation Common Stock,205,16.96,17.2,17.28,17.3,0.61,BEARISH,0.99
+MGRD,"Affiliated Managers Group, Inc. 4.200% J",445,15.67,15.61,15.6,15.52,0.62,BULLISH,0.74
+MCR,MFS Charter Income Trust Common Stock,278,6.32,6.29,6.27,6.25,0.62,BULLISH,0.69
+GBLI,"Global Indemnity Group, LLC Class A Comm",403,28.15,28.34,28.51,28.33,0.63,MIXED,1.43
+TFSA,"Terra Income Fund 6, LLC 7.00% Notes due",211,25.01,25.0,24.98,24.84,0.63,BULLISH,2.65
+ALTO,"Alto Ingredients, Inc. Common Stock",208,2.71,2.7,2.68,2.68,0.64,MIXED,0.79
+EB,"Eventbrite, Inc. Class A Common Stock",430,4.41,4.41,4.41,4.44,0.65,MIXED,0.62
+NVEC,NVE Corporation Common Stock,325,66.72,66.53,66.7,66.27,0.65,MIXED,0.58
+XOMAP,XOMA Royalty Corporation 8.625% Series A,323,26.12,26.05,26.14,26.22,0.65,BEARISH,1.14
+HTB,"HomeTrust Bancshares, Inc. Common Stock",764,43.9,43.99,43.8,43.69,0.68,BULLISH,0.99
+GAIN,Gladstone Investment Corporation Busines,553,13.98,13.92,13.89,13.83,0.68,BULLISH,0.68
+NEWTG,"NewtekOne, Inc. 8.50% Fixed Rate Senior ",672,25.54,25.42,25.35,25.24,0.7,BULLISH,0.59
+BST,BlackRock Science and Technology Trust C,887,40.01,40.26,40.29,40.0,0.72,MIXED,0.71
+BLW,Blackrock Limited Duration Income Trust,490,13.73,13.75,13.73,13.66,0.72,BULLISH,0.78
+OCCIN,"OFS Credit Company, Inc. 5.25% Series E ",287,24.68,24.67,24.63,24.49,0.72,BULLISH,0.18
+BANFP,BancFirst Corporation - BFC Capital Trus,870,26.11,26.2,26.16,26.01,0.73,BULLISH,1.15
+GSBC,"Great Southern Bancorp, Inc. Common Stoc",715,63.68,63.38,63.01,62.92,0.73,BULLISH,0.85
+HLLY,Holley Inc. Common Stock,513,4.2,4.14,4.11,4.14,0.73,MIXED,0.96
+HCMA,HCM III Acquisition Corp. Class A Ordina,808,10.19,10.19,10.17,10.12,0.74,BULLISH,0.12
+FSBW,"FS Bancorp, Inc. Common Stock",317,42.15,41.92,41.75,41.61,0.74,BULLISH,0.78
+GUT,Gabelli Utility Trust (The) Common Stock,444,6.06,6.02,6.0,5.97,0.76,BULLISH,0.68
+GLRE,"Greenlight Capital Re, Ltd. Class A Ordi",478,14.03,13.93,13.88,13.99,0.77,MIXED,0.94
+OPBK,OP Bancorp Common Stock,208,13.95,14.07,14.09,14.17,0.77,BEARISH,0.54
+OTLY,Oatly Group AB American Depositary Share,356,11.98,11.45,11.36,11.38,0.79,MIXED,1.29
+MGR,"Affiliated Managers Group, Inc. 5.875% J",609,21.43,21.41,21.41,21.23,0.8,MIXED,0.87
+CPZ,Calamos Long/Short Equity & Dynamic Inco,291,14.85,14.93,14.91,14.81,0.81,BULLISH,0.81
+VABK,Virginia National Bankshares Corporation,218,40.4,41.25,41.12,40.92,0.81,BULLISH,1.06
+BCAL,California BanCorp Common Stock,611,18.97,18.88,18.77,18.93,0.82,MIXED,0.49
+EICA,Eagle Point Income Company Inc. 5.00% Se,220,24.74,24.75,24.7,24.55,0.82,BULLISH,1.34
+CCAP,"Crescent Capital BDC, Inc. Common stock",519,14.04,14.23,14.3,14.35,0.83,BEARISH,0.98
+EFSI,Eagle Financial Services Inc Common Stoc,209,38.93,38.81,38.91,39.13,0.83,BEARISH,0.64
+AIV,Apartment Investment and Management Comp,844,5.86,5.88,5.88,5.83,0.84,MIXED,0.79
+MGRE,"Affiliated Managers Group, Inc. 6.750% J",697,24.63,24.52,24.45,24.31,0.87,BULLISH,0.57
+OFSSH,OFS Capital Corporation 4.95% Notes due ,318,23.75,23.76,23.75,23.55,0.88,BULLISH,0.29
+LQDT,"Liquidity Services, Inc. Common Stock",950,30.69,31.62,31.7,31.42,0.9,MIXED,1.1
+TPTA,"Terra Property Trust, Inc. 6.00% Notes d",569,23.26,23.4,23.51,23.61,0.9,BEARISH,0.66
+NPB,"Northpointe Bancshares, Inc. Common Stoc",609,17.6,17.34,17.45,17.51,0.92,BEARISH,0.5
+MITT,"TPG Mortgage Investment Trust, Inc. Comm",272,8.6,8.53,8.61,8.58,0.92,MIXED,0.84
+KNOP,KNOT Offshore Partners LP Common Units r,348,10.27,10.37,10.43,10.47,0.93,BEARISH,0.71
+CCBG,Capital City Bank Group Common Stock,733,43.0,42.89,43.02,43.29,0.95,BEARISH,1.11
+CHSCO,CHS Inc. Class B Cumulative Redeemable P,324,26.43,26.37,26.31,26.12,0.95,BULLISH,0.42
+BWMN,Bowman Consulting Group Ltd. Common Stoc,590,33.99,34.56,34.78,34.89,0.96,BEARISH,0.55
+NODK,"NI Holdings, Inc. Common Stock",274,13.32,13.39,13.42,13.52,0.97,BEARISH,0.64
+CHSCL,CHS Inc Class B Cumulative Redeemable Pr,317,25.81,25.78,25.73,25.53,0.99,BULLISH,0.63
+CHSCM,CHS Inc Class B Reset Rate Cumulative Re,308,25.11,25.12,25.06,24.87,0.99,BULLISH,0.72
+ZVRA,"Zevra Therapeutics, Inc. Common Stock",487,8.67,8.64,8.73,8.67,1.0,MIXED,0.68
+AUNA,Auna SA Class A Ordinary Shares,363,4.95,4.86,4.88,4.83,1.01,MIXED,1.37
+FTHY,First Trust High Yield Opportunities 202,518,14.08,14.08,14.05,13.93,1.02,BULLISH,0.89
+FTK,"Flotek Industries, Inc. Common Stock",528,17.6,17.32,17.32,17.14,1.03,MIXED,0.7
+BRSP,"BrightSpire Capital, Inc. Class A Common",741,5.71,5.83,5.87,5.81,1.04,MIXED,1.19
+ATLCZ,Atlanticus Holdings Corporation 9.25% Se,387,25.58,25.57,25.53,25.3,1.04,BULLISH,0.77
+SEG,Seaport Entertainment Group Inc. Common ,262,20.61,20.23,20.13,20.34,1.04,MIXED,0.85
+INMD,InMode Ltd. Ordinary Shares,916,14.42,14.73,14.82,14.67,1.05,MIXED,0.83
+PMO,Putnam Municipal Opportunities Trust Com,363,10.66,10.65,10.62,10.54,1.05,BULLISH,0.89
+NIE,Virtus Equity & Convertible Income Fund ,701,25.29,25.37,25.36,25.1,1.06,BULLISH,0.66
+HNRG,Hallador Energy Company Common Stock,873,19.99,19.68,19.47,19.64,1.07,MIXED,0.88
+BCML,BayCom Corp Common Stock,331,30.4,30.28,29.95,29.95,1.09,MIXED,0.8
+KINS,"Kingstone Companies, Inc. Common Stock",224,15.82,15.92,15.88,16.05,1.09,MIXED,0.63
+DOUG,Douglas Elliman Inc. Common Stock,219,2.46,2.58,2.61,2.58,1.09,MIXED,0.83
+FOSL,"Fossil Group, Inc. Common Stock",213,3.88,3.74,3.7,3.73,1.09,MIXED,0.66
+QUAD,"Quad Graphics, Inc Class A Common Stock",341,6.61,6.31,6.24,6.23,1.1,BULLISH,1.05
+ANRO,"Alto Neuroscience, Inc. Common Stock",535,17.39,16.4,16.31,16.5,1.13,MIXED,1.02
+KFS,"Kingsway Financial Services, Inc. Common",359,12.43,12.91,13.06,13.02,1.13,MIXED,1.15
+FCCO,First Community Corporation Common Stock,231,30.01,30.05,29.83,29.71,1.13,BULLISH,0.64
+EQBK,"Equity Bancshares, Inc. Class A Common S",882,46.32,46.65,46.55,46.13,1.14,BULLISH,0.86
+DMAC,DiaMedica Therapeutics Inc. Common Stock,461,8.81,8.38,8.3,8.4,1.14,MIXED,0.69
+BRBS,"Blue Ridge Bankshares, Inc. Common Stock",392,4.3,4.3,4.31,4.35,1.14,BEARISH,1.01
+PRHIZ,"Presurance Holdings, Inc. 9.75% Senior U",232,18.97,18.94,18.91,19.13,1.15,MIXED,0.61
+PDLB,"Ponce Financial Group, Inc. Common Stock",401,16.67,16.76,16.69,16.57,1.16,BULLISH,0.64
+BCSF,"Bain Capital Specialty Finance, Inc. Com",882,13.56,13.43,13.43,13.59,1.17,BEARISH,1.03
+AOSL,Alpha and Omega Semiconductor Limited Co,643,21.73,21.37,21.62,21.44,1.17,MIXED,0.67
+ETB,Eaton Vance Tax-Managed Buy-Write Income,452,15.41,15.43,15.39,15.25,1.17,BULLISH,0.68
+CHSCN,CHS Inc Preferred Class B Series 2 Reset,313,25.49,25.44,25.38,25.15,1.17,BULLISH,0.69
+ALLT,Allot Ltd. Ordinary Shares,410,10.44,10.12,10.13,10.01,1.19,MIXED,0.77
+JMSB,"John Marshall Bancorp, Inc. Common Stock",285,20.25,20.51,20.43,20.27,1.19,BULLISH,0.83
+MITN,"TPG Mortgage Investment Trust, Inc. 9.50",746,25.28,25.23,25.13,24.92,1.2,BULLISH,0.61
+FINW,FinWise Bancorp Common Stock,241,17.72,17.68,17.8,17.89,1.2,BEARISH,0.45
+LSAK,"Lesaka Technologies, Inc. Common Stock",370,4.37,4.47,4.52,4.51,1.21,MIXED,1.04
+ACEL,"Accel Entertainment, Inc. ",899,10.84,11.09,11.19,11.22,1.23,BEARISH,0.71
+MKTW,"MarketWise, Inc. Class A Common Stock",245,15.25,15.48,15.67,15.67,1.24,MIXED,0.84
+CEVA,"CEVA, Inc. Common Stock",636,23.03,22.59,22.41,22.3,1.25,BULLISH,0.93
+AOMR,"Angel Oak Mortgage REIT, Inc. Common Sto",228,9.19,8.99,8.96,8.87,1.25,BULLISH,0.85
+OPRT,Oportun Financial Corporation Common Sto,223,5.11,5.31,5.36,5.37,1.25,BEARISH,0.75
+DDT,Dillard's Capital Trust I,412,26.26,26.26,26.17,25.93,1.26,BULLISH,1.17
+SJT,San Juan Basin Royalty Trust Common Stoc,263,5.66,5.68,5.75,5.74,1.27,MIXED,0.87
+NXRT,"NexPoint Residential Trust, Inc. Common ",759,29.86,30.28,30.29,29.91,1.28,MIXED,0.93
+CYH,"Community Health Systems, Inc. Common St",483,3.49,3.29,3.24,3.26,1.29,MIXED,0.66
+SUPX,SuperX AI Technology Limited Ordinary Sh,515,15.52,15.64,15.55,15.75,1.3,MIXED,0.76
+NXP,Nuveen Select Tax Free Income Portfolio ,676,14.44,14.34,14.24,14.15,1.31,BULLISH,0.74
+RSVR,"Reservoir Media, Inc. Common Stock",505,7.66,7.59,7.53,7.49,1.32,BULLISH,0.55
+ABX,"Abacus Global Management, Inc. Class A C",820,8.41,8.01,8.0,8.11,1.33,MIXED,1.12
+GDEN,"Golden Entertainment, Inc. Common Stock",741,28.27,27.91,27.68,27.53,1.33,BULLISH,0.41
+DDI,"DoubleDown Interactive Co., Ltd. America",441,8.89,8.69,8.72,8.81,1.33,BEARISH,1.41
+IKT,"Inhibikase Therapeutics, Inc. Common Sto",329,1.72,1.65,1.66,1.68,1.34,BEARISH,0.69
+DIN,"Dine Brands Global, Inc. Common Stock",467,32.48,34.3,34.75,34.65,1.36,MIXED,0.89
+EFSCP,Enterprise Financial Services Corporatio,759,20.58,20.38,20.37,20.1,1.37,BULLISH,0.94
+NCDL,Nuveen Churchill Direct Lending Corp. Co,699,14.19,13.88,13.7,13.69,1.37,BULLISH,0.65
+SLRC,SLR Investment Corp. Common Stock,823,15.13,15.11,15.13,15.31,1.38,BEARISH,0.9
+BSTZ,BlackRock Science and Technology Term Tr,504,22.78,22.78,22.66,22.47,1.38,BULLISH,0.6
+TRDA,"Entrada Therapeutics, Inc. Common Stock",423,11.06,10.92,10.91,10.77,1.38,BULLISH,0.59
+ATLCL,Atlanticus Holdings Corporation 6.125% S,377,24.95,24.95,24.85,24.6,1.38,BULLISH,0.99
+MCS,Marcus Corporation (The) Common Stock,492,16.11,15.74,15.57,15.51,1.39,BULLISH,0.86
+CDRO,"Codere Online Luxembourg, S.A. Ordinary ",363,7.95,7.9,7.87,7.79,1.39,BULLISH,0.53
+JBIO,"Jade Biosciences, Inc. Common Stock",777,15.67,15.22,15.23,15.01,1.4,MIXED,0.85
+WDH,Waterdrop Inc. American Depositary Share,636,1.75,1.79,1.78,1.81,1.4,MIXED,0.93
+KTF,DWS Municipal Income Trust,364,9.22,9.18,9.13,9.05,1.4,BULLISH,0.73
+CADL,"Candel Therapeutics, Inc. Common Stock",315,5.75,5.71,5.78,5.79,1.41,BEARISH,0.84
+AMRN,Amarin Corporation plc,315,15.14,14.96,14.99,14.77,1.41,MIXED,0.69
+EVN,Eaton Vance Municipal Income Trust Commo,438,11.02,10.99,10.91,10.83,1.42,BULLISH,0.6
+SAR,Saratoga Investment Corp New,373,23.04,23.22,23.19,22.89,1.42,BULLISH,0.77
+FINS,Angel Oak Financial Strategies Income Te,332,13.27,13.29,13.24,13.1,1.43,BULLISH,0.79
+DNA,"Ginkgo Bioworks Holdings, Inc. Class A C",576,9.49,9.28,9.29,9.15,1.44,MIXED,0.89
+COFS,"ChoiceOne Financial Services, Inc. Commo",435,28.99,29.44,29.42,29.84,1.46,MIXED,0.96
+LIEN,"Chicago Atlantic BDC, Inc. Common Stock",234,10.2,10.25,10.33,10.4,1.46,BEARISH,0.61
+NDMO,Nuveen Dynamic Municipal Opportunities F,620,10.41,10.43,10.38,10.27,1.48,BULLISH,0.82
+ELA,Envela Corporation Common Stock,331,12.95,13.0,13.19,13.18,1.48,MIXED,0.78
+NGVC,"Natural Grocers by Vitamin Cottage, Inc.",618,26.88,26.07,26.15,25.75,1.49,MIXED,0.82
+ZH,"Zhihu Inc. American Depositary Shares, e",309,3.55,3.56,3.6,3.54,1.49,MIXED,1.3
+TIPT,Tiptree Inc. Common Stock,661,17.58,17.58,17.62,17.84,1.5,BEARISH,0.96
+MSIF,"MSC Income Fund, Inc. Common Stock",609,13.03,13.04,13.11,13.23,1.5,BEARISH,0.97
+FCNCP,"First Citizens BancShares, Inc. Deposita",258,21.28,21.1,20.99,20.78,1.5,BULLISH,0.56
+FMNB,Farmers National Banc Corp. Common Stock,507,13.46,13.42,13.4,13.6,1.51,MIXED,0.78
+MBCN,Middlefield Banc Corp. Common Stock,282,35.1,34.61,34.55,35.08,1.51,MIXED,0.58
+FTF,Franklin Limited Duration Income Trust C,251,6.2,6.2,6.18,6.11,1.51,BULLISH,0.5
+HRZN,Horizon Technology Finance Corporation C,306,6.68,6.6,6.59,6.5,1.52,BULLISH,1.07
+ASLE,AerSale Corporation Common Stock,341,7.22,7.3,7.35,7.24,1.53,MIXED,0.79
+ATLCP,Atlanticus Holdings Corporation 7.625% S,375,24.75,24.63,24.53,24.25,1.54,BULLISH,1.15
+FMN,Federated Hermes Premier Municipal Incom,978,11.32,11.29,11.23,11.11,1.55,BULLISH,0.99
+CTLP,"Cantaloupe, Inc. Common Stock",758,10.3,10.5,10.6,10.66,1.55,BEARISH,0.82
+CHSCP,CHS Inc. 8%  Cumulative Redeemable Prefe,349,28.43,28.34,28.17,27.9,1.55,BULLISH,0.66
+GBAB,Guggenheim Taxable Municipal Bond & Inve,343,15.34,15.28,15.18,15.04,1.55,BULLISH,0.88
+EIG,Employers Holdings Inc Common Stock,953,42.45,43.63,43.89,43.22,1.57,MIXED,0.8
+SPOK,"Spok Holdings, Inc. Common Stock",282,13.66,13.46,13.41,13.25,1.58,BULLISH,0.73
+PFLT,PennantPark Floating Rate Capital Ltd. C,873,8.8,9.14,9.26,9.28,1.6,BEARISH,1.35
+ETO,Eaton Vance Tax-Advantage Global Dividen,489,29.91,30.09,30.03,29.61,1.6,BULLISH,0.69
+SDHY,PGIM Short Duration High Yield Opportuni,413,16.79,16.68,16.58,16.41,1.6,BULLISH,0.7
+BPRN,"Princeton Bancorp, Inc. Common Stock (PA",242,35.73,35.96,35.98,35.4,1.6,MIXED,0.67
+DGICB,"Donegal Group, Inc. Class B Common Stock",589,16.07,16.85,16.73,16.59,1.62,BULLISH,3.6
+MMT,MFS Multimarket Income Trust Common Stoc,285,4.77,4.75,4.72,4.67,1.63,BULLISH,0.91
+LCTX,"Lineage Cell Therapeutics, Inc. Common S",397,1.73,1.72,1.69,1.69,1.67,BULLISH,1.13
+HQH,abrdn Healthcare Investors Shares of Ben,937,19.8,19.47,19.33,19.14,1.68,BULLISH,0.87
+VGM,Invesco Trust for Investment Grade Munic,578,10.64,10.5,10.41,10.32,1.68,BULLISH,0.76
+BOC,Boston Omaha Corporation Class A Common ,393,12.49,12.49,12.48,12.69,1.68,MIXED,0.76
+PMM,Putnam Managed Municipal Income Trust Co,308,6.32,6.31,6.27,6.2,1.68,BULLISH,0.78
+FFIC,Flushing Financial Corporation Common St,567,16.73,16.48,16.22,16.2,1.69,BULLISH,0.68
+SITC,SITE Centers Corp. Common Stock,343,6.54,6.43,6.35,6.32,1.69,BULLISH,0.61
+RILYK,"BRC Group Holdings, Inc. 5.50% Senior No",759,24.88,24.89,24.8,24.46,1.7,BULLISH,0.11
+ETON,"Eton Pharmaceuticals, Inc. Common Stock",470,17.55,15.91,15.62,15.92,1.7,MIXED,1.22
+AURA,"Aura Biosciences, Inc. Common Stock",370,5.83,5.65,5.6,5.7,1.71,MIXED,0.73
+UVE,UNIVERSAL INSURANCE HOLDINGS INC Common ,878,31.39,31.3,31.05,31.59,1.72,MIXED,0.6
+FDUS,Fidus Investment Corporation Common Stoc,687,18.86,19.03,19.19,19.35,1.72,BEARISH,0.93
+FRPH,"FRP Holdings, Inc. Common Stock",454,23.78,23.83,23.75,23.42,1.72,BULLISH,0.8
+FCNCO,"First Citizens BancShares, Inc. 5.625% N",271,22.3,22.13,22.03,21.74,1.72,BULLISH,0.75
+CTRN,"Citi Trends, Inc. Common Stock",386,46.26,45.19,44.8,44.39,1.73,BULLISH,0.67
+BWBBP,"Bridgewater Bancshares, Inc. Depositary ",550,19.97,19.83,19.67,19.48,1.74,BULLISH,1.41
+SUPV,Grupo Supervielle S.A. American Deposita,994,10.84,11.27,11.39,11.46,1.76,BEARISH,0.96
+PPT,Putnam Premier Income Trust Common Stock,361,3.63,3.63,3.61,3.57,1.76,BULLISH,0.64
+ABEO,Abeona Therapeutics Inc. Common Stock,275,5.06,5.07,5.11,5.16,1.77,BEARISH,0.75
+CSV,"Carriage Services, Inc. Common Stock",695,43.94,43.74,43.41,42.95,1.79,BULLISH,0.63
+MGRB,"Affiliated Managers Group, Inc. 4.750% J",502,17.77,17.62,17.53,17.3,1.79,BULLISH,0.55
+SOR,"Source Capital, Inc. Cmn Shs of BI",404,48.47,48.36,48.16,47.5,1.79,BULLISH,0.83
+MFM,MFS Municipal Income Trust Common Stock,228,5.54,5.52,5.49,5.42,1.79,BULLISH,0.45
+MSBIP,"Midland States Bancorp, Inc. Depositary ",553,25.68,25.47,25.33,25.0,1.8,BULLISH,0.45
+GROY,Gold Royalty Corp. Common Shares,760,4.39,4.4,4.46,4.38,1.83,MIXED,0.67
+CUBB,"Customers Bancorp, Inc 5.375% Subordinat",723,22.7,22.61,22.48,22.2,1.83,BULLISH,1.49
+ZKH,ZKH Group Limited American Depositary Sh,559,3.52,3.49,3.47,3.42,1.84,BULLISH,0.63
+UNTY,"Unity Bancorp, Inc. Common Stock",548,54.67,54.76,54.35,53.76,1.84,BULLISH,1.04
+RFMZ,RiverNorth Flexible Municipal Income Fun,319,13.1,13.13,13.05,12.89,1.84,BULLISH,1.12
+SNFCA,Security National Financial Corporation ,241,9.3,9.11,8.99,8.94,1.86,BULLISH,1.14
+GPJA,Georgia Power Company Series 2017A 5.00%,217,23.45,23.24,23.12,22.8,1.86,BULLISH,1.03
+ECX,ECARX Holdings Inc. Class A Ordinary sha,591,1.7,1.79,1.82,1.81,1.87,MIXED,1.12
+BME,Blackrock Health Sciences Trust,563,42.19,42.01,41.83,41.21,1.89,BULLISH,0.76
+FFWM,First Foundation Inc. Common Stock,519,6.26,6.28,6.26,6.16,1.91,BULLISH,0.46
+AIO,Virtus Artificial Intelligence & Technol,781,22.71,22.55,22.48,22.11,1.92,BULLISH,0.97
+DLY,DoubleLine Yield Opportunities Fund Comm,716,14.94,14.9,14.82,14.61,1.94,BULLISH,0.74
+LXRX,"Lexicon Pharmaceuticals, Inc. Common Sto",562,1.32,1.31,1.32,1.3,1.95,MIXED,0.42
+ILPT,Industrial Logistics Properties Trust Co,369,5.53,5.48,5.51,5.58,1.96,BEARISH,0.59
+HDSN,"Hudson Technologies, Inc. Common Stock",319,7.43,7.38,7.33,7.24,1.96,BULLISH,0.89
+IMMP,Immutep Limited American Depositary Shar,397,2.69,2.75,2.81,2.76,1.97,MIXED,0.63
+CBNA,"Chain Bridge Bancorp, Inc. Class A Commo",231,35.17,35.55,35.18,34.86,1.97,BULLISH,1.27
+BMRC,Bank of Marin Bancorp Common Stock,441,27.39,27.24,26.96,26.69,1.98,BULLISH,0.95
+RJET,Republic Airways Holdings Inc. Common St,876,18.36,18.61,18.49,18.86,1.99,MIXED,1.06
+IQI,Invesco Quality Municipal Income Trust C,550,10.4,10.2,10.1,9.99,1.99,BULLISH,1.2
+CTGO,"Contango ORE, Inc. Common Stock",405,27.28,28.03,28.58,28.36,1.99,MIXED,0.72
+BJRI,"BJ's Restaurants, Inc. Common Stock",860,40.78,42.25,42.57,41.76,2.0,MIXED,0.75
+MAGN,Magnera Corporation Common Stock,492,13.64,14.09,14.1,14.36,2.0,BEARISH,0.74
+GBFH,GBank Financial Holdings Inc. Common Sto,481,33.44,33.44,33.39,34.06,2.0,MIXED,0.82
+VKI,Invesco Advantage Municipal Income Trust,413,9.31,9.16,9.08,8.97,2.0,BULLISH,0.9
+DERM,Journey Medical Corporation Common Stock,261,7.91,8.09,8.18,8.02,2.01,MIXED,0.96
+CTO,"CTO Realty Growth, Inc. Common Stock",612,18.88,18.46,18.26,18.08,2.02,BULLISH,0.63
+DC,Dakota Gold Corp. Common Stock,661,5.86,6.0,6.1,5.98,2.03,MIXED,1.51
+SOHU,Sohu.com Limited American Depositary Sha,483,16.07,16.27,16.35,16.02,2.03,MIXED,1.23
+BWFG,"Bankwell Financial Group, Inc. Common St",386,48.67,48.9,48.51,47.91,2.03,BULLISH,0.86
+GO,Grocery Outlet Holding Corp. Common Stoc,990,10.14,9.93,9.85,10.06,2.04,MIXED,0.7
+LEO,"BNY Mellon Strategic Municipals, Inc. Co",404,6.48,6.47,6.43,6.34,2.04,BULLISH,0.96
+VCV,Invesco California Value Municipal Incom,541,11.3,11.23,11.16,11.0,2.05,BULLISH,0.92
+LMNR,Limoneira Co Common Stock,260,14.44,14.29,14.2,14.0,2.05,BULLISH,0.62
+IIM,Invesco Value Municipal Income Trust Com,605,12.84,12.62,12.49,12.36,2.06,BULLISH,0.97
+HTLM,HomesToLife Ltd Ordinary Shares,257,2.8,2.64,2.58,2.63,2.06,MIXED,3.99
+SOPH,SOPHiA GENETICS SA Ordinary Shares,323,4.81,4.86,4.96,4.94,2.08,MIXED,0.37
+VKQ,Invesco Municipal Trust Common Stock,550,9.95,9.88,9.8,9.67,2.1,BULLISH,0.92
+HAFC,Hanmi Financial Corporation Common Stock,806,26.97,27.15,27.33,27.71,2.11,BEARISH,0.66
+WILC,"G. Willi-Food International,  Ltd. Ordin",397,28.66,29.25,29.18,28.64,2.13,BULLISH,0.2
+RMMZ,RiverNorth Managed Duration Municipal In,296,14.99,15.0,14.86,14.67,2.16,BULLISH,0.46
+ARTNA,Artesian Resources Corporation Class A C,343,33.23,33.12,32.99,32.39,2.19,BULLISH,1.01
+CCRN,"Cross Country Healthcare, Inc. Common St",269,8.28,8.46,8.65,8.49,2.2,MIXED,0.72
+TTGT,"TechTarget, Inc. Common Stock",373,5.18,5.21,5.26,5.32,2.22,BEARISH,1.01
+MTLS,Materialise NV American Depositary Share,329,5.64,5.53,5.55,5.65,2.23,BEARISH,0.8
+POWW,Outdoor Holding Company Common Stock,224,1.92,1.82,1.78,1.82,2.24,MIXED,1.73
+AHG,Akso Health Group ADS,795,1.44,1.46,1.46,1.43,2.25,MIXED,0.51
+UXIN,Uxin Limited ADS,735,3.5,3.46,3.45,3.38,2.25,BULLISH,0.45
+FRBA,First Bank Common Stock,437,17.4,17.14,16.95,16.75,2.26,BULLISH,0.63
+EVC,Entravision Communications Corporation C,267,2.94,3.0,3.04,3.07,2.26,BEARISH,0.77
+FLX,BingEx Limited American Depositary Share,205,2.83,3.17,3.23,3.22,2.27,MIXED,0.81
+HPK,"HighPeak Energy, Inc. Common Stock",625,4.99,4.78,4.67,4.68,2.28,MIXED,0.62
+NEWP,New Pacific Metals Corp. Common Shares,673,3.66,3.67,3.68,3.6,2.29,MIXED,0.64
+EOT,Eaton Vance Municipal Income Trust EATON,274,17.47,17.44,17.39,17.04,2.29,BULLISH,0.72
+RDNW,"RideNow Group, Inc. Class B Common Stock",238,6.27,5.81,5.68,5.66,2.29,BULLISH,1.3
+VEL,"Velocity Financial, Inc. Common Stock",772,19.87,20.03,19.94,19.57,2.3,BULLISH,0.65
+PPIH,"Perma-Pipe International Holdings, Inc. ",261,32.58,31.77,31.21,31.02,2.31,BULLISH,0.91
+YB,Yuanbao Inc. American Depositary Shares,898,19.58,19.84,19.95,20.3,2.33,BEARISH,1.05
+TRC,Tejon Ranch Co Common Stock,455,16.81,16.58,16.43,16.19,2.35,BULLISH,0.72
+FT,Franklin Universal Trust Common Stock,209,8.34,8.2,8.13,8.0,2.36,BULLISH,1.2
+MPV,Barings Participation Investors Common S,203,19.18,19.04,18.92,18.59,2.36,BULLISH,0.79
+TCI,"Transcontinental Realty Investors, Inc. ",471,54.56,54.42,54.0,53.13,2.37,BULLISH,0.49
+AMBQ,"Ambiq Micro, Inc. Common Stock",633,30.51,30.0,30.63,30.73,2.38,BEARISH,0.56
+USCB,"USCB Financial Holdings, Inc. Class A Co",357,19.65,19.64,19.48,19.17,2.39,BULLISH,0.78
+GTN,"Gray Media, Inc. Common Stock",480,4.76,4.63,4.56,4.68,2.4,MIXED,0.96
+VMO,Invesco Municipal Opportunity Trust Comm,672,9.98,9.88,9.79,9.64,2.42,BULLISH,0.89
+NMCO,Nuveen Municipal Credit Opportunities Fu,588,10.74,10.75,10.66,10.49,2.42,BULLISH,0.69
+NHPAP,"National Healthcare Properties, Inc. 7.3",557,19.6,19.46,19.31,18.98,2.45,BULLISH,0.84
+JACK,Jack In The Box Inc. Common Stock,399,21.21,21.15,21.2,20.68,2.45,MIXED,0.96
+PCB,PCB Bancorp Common Stock,324,22.88,23.05,22.8,22.49,2.45,BULLISH,0.91
+NLOP,Net Lease Office Properties Common Share,293,19.86,19.56,19.58,20.05,2.48,BEARISH,0.45
+NHPBP,"National Healthcare Properties, Inc. 7.1",531,18.67,18.9,18.78,18.43,2.5,BULLISH,1.71
+TBPH,"Theravance Biopharma, Inc. Ordinary Shar",987,19.49,19.6,19.59,19.11,2.51,BULLISH,0.96
+CWCO,Consolidated Water Co. Ltd. Ordinary Sha,595,37.33,37.15,37.04,36.22,2.51,BULLISH,0.85
+PEPG,PepGen Inc. Common Stock,458,6.59,5.7,5.53,5.66,2.54,MIXED,1.28
+IMMR,Immersion Corporation Common Stock,202,6.26,6.44,6.53,6.6,2.54,BEARISH,0.92
+CGBD,"Carlyle Secured Lending, Inc. Common Sto",874,11.99,12.12,12.25,12.43,2.55,BEARISH,0.78
+PRTC,PureTech Health plc American Depositary ,422,17.46,17.91,18.06,17.61,2.55,MIXED,0.28
+FDBC,"Fidelity D & D Bancorp, Inc. Common Stoc",264,45.76,46.32,45.74,45.15,2.55,BULLISH,0.64
+PRTH,"Priority Technology Holdings, Inc. Commo",455,5.59,5.54,5.63,5.68,2.57,BEARISH,0.82
+CERS,Cerus Corporation Common Stock,445,2.32,2.24,2.28,2.22,2.57,MIXED,0.74
+ISBA,Isabella Bank Corporation Common stock,380,51.8,51.44,50.68,50.11,2.57,BULLISH,1.26
+BLMN,"Bloomin' Brands, Inc. Common Stock",547,6.46,6.68,6.75,6.85,2.58,BEARISH,1.09
+DVS,Dolly Varden Silver Corporation Common S,412,4.53,4.68,4.8,4.79,2.58,MIXED,0.75
+OIA,Invesco Municipal Income Opportunities T,302,6.33,6.28,6.22,6.12,2.58,BULLISH,0.96
+BGIN,Bgin Blockchain Limited Class A Ordinary,320,2.85,2.95,3.02,3.01,2.59,MIXED,0.26
+VTN,Invesco Trust for Investment Grade New Y,235,12.07,11.86,11.7,11.54,2.59,BULLISH,1.08
+ARVN,"Arvinas, Inc. Common Stock",772,11.96,12.78,12.82,12.51,2.61,MIXED,0.94
+HBCP,"Home Bancorp, Inc. Common Stock",483,61.67,61.28,60.74,59.67,2.61,BULLISH,1.19
+NREF,"NexPoint Real Estate Finance, Inc. Commo",266,15.01,14.87,14.74,14.47,2.61,BULLISH,0.86
+HBNC,"Horizon Bancorp, Inc. Common Stock",921,18.01,18.09,17.9,17.61,2.64,BULLISH,0.62
+BSVN,Bank7 Corp. Common stock,415,44.07,44.5,44.25,43.33,2.64,BULLISH,0.58
+USNA,"USANA Health Sciences, Inc. Common Stock",387,21.27,21.21,21.18,20.65,2.64,BULLISH,0.82
+RBB,RBB Bancorp Common Stock,380,22.3,21.94,21.62,21.35,2.65,BULLISH,0.86
+LOCO,"El Pollo Loco Holdings, Inc. Common Stoc",315,10.52,10.59,10.65,10.87,2.65,BEARISH,0.78
+OCGN,"Ocugen, Inc. Common Stock",479,1.45,1.43,1.47,1.46,2.66,MIXED,0.55
+GCBC,"Greene County Bancorp, Inc. Common Stock",408,23.96,23.84,23.47,23.2,2.66,BULLISH,0.65
+REFI,"Chicago Atlantic Real Estate Finance, In",251,11.93,12.03,12.18,12.35,2.7,BEARISH,1.2
+ODV,Osisko Development Corp. Common Shares,973,3.81,3.77,3.71,3.67,2.71,BULLISH,0.83
+NEWTP,"NewtekOne, Inc. Depositary Shares, Non-C",695,24.0,23.98,23.81,23.33,2.72,BULLISH,0.8
+CLPT,"ClearPoint Neuro, Inc. Common Stock",399,14.11,13.58,13.78,13.97,2.72,BEARISH,0.69
+HEPS,D-Market Electronic Services & Trading A,845,2.62,2.68,2.7,2.63,2.75,MIXED,0.68
+MNTK,"Montauk Renewables, Inc. Common Stock",244,1.73,1.73,1.68,1.68,2.75,BULLISH,0.22
+BRBI,BRBI BR Partners S.A. ADSs,691,13.8,14.56,14.53,14.18,2.77,BULLISH,0.42
+FBLA,"FB Bancorp, Inc. Common Stock",266,13.42,13.45,13.26,13.08,2.79,BULLISH,0.95
+KBDC,"Kayne Anderson BDC, Inc. Common Stock",962,14.09,14.13,14.24,14.52,2.82,BEARISH,1.04
+GYRE,"Gyre Therapeutics, Inc. Common Stock",784,8.15,7.92,7.87,7.69,2.83,BULLISH,0.56
+KFRC,"Kforce, Inc. Common Stock",533,29.65,32.42,33.26,32.52,2.84,MIXED,0.96
+ESQ,"Esquire Financial Holdings, Inc. Common ",927,108.3,110.58,110.02,107.49,2.85,BULLISH,0.6
+HYLN,Hyliion Holdings Corp. Class A Common St,361,2.06,2.06,2.06,2.0,2.85,MIXED,0.88
+RWAY,Runway Growth Finance Corp. Common Stock,314,8.69,8.85,8.99,9.1,2.86,BEARISH,0.86
+CRESY,Cresud S.A.C.I.F. y A. American Deposita,733,12.0,12.54,12.65,12.31,2.88,MIXED,0.81
+LND,Brasilagro Brazilian Agric Real Estate C,391,3.82,3.88,3.88,3.77,2.88,MIXED,0.66
+MBUU,"Malibu Boats, Inc. Class A Common Stock",582,31.2,31.53,31.8,30.9,2.89,MIXED,0.81
+KALV,"KalVista Pharmaceuticals, Inc. Common St",773,15.33,15.21,15.31,15.66,2.9,BEARISH,0.75
+ALT,"Altimmune, Inc. Common Stock",524,4.62,4.79,4.84,4.7,2.9,MIXED,0.49
+ALTI,"AlTi Global, Inc. Class A Common Stock",636,4.34,4.43,4.47,4.56,2.92,BEARISH,0.61
+AHH,"Armada Hoffler Properties, Inc. Common S",555,6.92,6.99,6.95,6.79,2.92,BULLISH,0.77
+VOR,Vor Biopharma Inc. Common Stock,552,13.23,13.3,13.58,13.19,2.92,MIXED,0.7
+BHFAN,"Brighthouse Financial, Inc. Depositary s",773,13.52,13.5,13.46,13.1,2.97,BULLISH,0.4
+ACIC,American Coastal Insurance Corporation C,538,11.02,11.09,11.14,11.42,2.97,BEARISH,0.89
+UVSP,Univest Financial Corporation Common Sto,999,35.06,34.71,34.22,33.66,2.98,BULLISH,0.69
+LEGH,Legacy Housing Corporation Common Stock ,530,22.08,21.44,21.27,20.78,2.98,BULLISH,0.92
+LCNB,LCNB Corporation Common Stock,246,17.53,17.42,17.25,16.9,2.98,BULLISH,0.6
+WALD,Waldencast plc Class A Ordinary Share,228,1.79,1.8,1.78,1.84,2.98,MIXED,0.59
+ORRF,"Orrstown Financial Services, Inc. Common",738,37.81,37.69,37.17,36.56,3.0,BULLISH,0.39
