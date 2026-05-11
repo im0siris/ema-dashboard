@@ -101,12 +101,24 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<
     "results" | "recurring" | "config" | "history"
   >("results");
-  const [filterAlignment, setFilterAlignment] = useState("ALL");
-  const [maxSpread, setMaxSpread] = useState(3.0);
-  const [minComposite, setMinComposite] = useState(0);
   const [searchTicker, setSearchTicker] = useState("");
   const [sortBy, setSortBy] = useState<string>("spread_pct");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  // Compression-mode filters
+  const [filterAlignment, setFilterAlignment] = useState("ALL");
+  const [maxSpread, setMaxSpread] = useState(3.0);
+  const [minScore, setMinScore] = useState(0);
+
+  // Full-setup-mode filters
+  const [minComposite, setMinComposite] = useState(0);
+  const [minAlignmentCount, setMinAlignmentCount] = useState(0);
+  const [maxFlatDistance, setMaxFlatDistance] = useState(10);
+  const [filterSqueeze, setFilterSqueeze] = useState<"ANY" | "YES" | "NO">("ANY");
+  const [minWeekly, setMinWeekly] = useState(0);
+  const [filterBaseBreak, setFilterBaseBreak] = useState<"ANY" | "YES" | "NO">("ANY");
+  const [minBaseYears, setMinBaseYears] = useState(0);
+  const [minVolumeRatio, setMinVolumeRatio] = useState(0);
 
   // Config
   const [configMinMc, setConfigMinMc] = useState(200);
@@ -116,7 +128,22 @@ export default function Dashboard() {
   const [activeRequest, setActiveRequest] = useState<ScanRequest | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
 
-  // ---- Reset sort when mode changes ----
+  function resetFilters() {
+    setSearchTicker("");
+    setFilterAlignment("ALL");
+    setMaxSpread(3.0);
+    setMinScore(0);
+    setMinComposite(0);
+    setMinAlignmentCount(0);
+    setMaxFlatDistance(10);
+    setFilterSqueeze("ANY");
+    setMinWeekly(0);
+    setFilterBaseBreak("ANY");
+    setMinBaseYears(0);
+    setMinVolumeRatio(0);
+  }
+
+  // ---- Reset sort + filters when mode changes ----
   useEffect(() => {
     if (selectedMode === "compression") {
       setSortBy("spread_pct");
@@ -127,7 +154,8 @@ export default function Dashboard() {
     }
     setSelectedRunId(null);
     setResults([]);
-    setFilterAlignment("ALL");
+    resetFilters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMode]);
 
   // ---- Load scan runs for selected mode ----
@@ -331,6 +359,7 @@ export default function Dashboard() {
   const filteredCompression = compressionRows
     .filter((r) => filterAlignment === "ALL" || r.alignment === filterAlignment)
     .filter((r) => r.spread_pct <= maxSpread)
+    .filter((r) => r.score >= minScore)
     .filter(
       (r) =>
         !searchTicker ||
@@ -344,6 +373,25 @@ export default function Dashboard() {
 
   const filteredFullSetup = fullSetupRows
     .filter((r) => r.composite_score >= minComposite)
+    .filter((r) => r.alignment_count >= minAlignmentCount)
+    .filter((r) => r.flat_distance_pct <= maxFlatDistance)
+    .filter((r) =>
+      filterSqueeze === "ANY"
+        ? true
+        : filterSqueeze === "YES"
+          ? r.squeeze_active
+          : !r.squeeze_active,
+    )
+    .filter((r) => r.weekly_score >= minWeekly)
+    .filter((r) =>
+      filterBaseBreak === "ANY"
+        ? true
+        : filterBaseBreak === "YES"
+          ? r.base_break_active
+          : !r.base_break_active,
+    )
+    .filter((r) => r.base_break_years >= minBaseYears)
+    .filter((r) => r.volume_ratio >= minVolumeRatio)
     .filter(
       (r) =>
         !searchTicker ||
@@ -534,98 +582,299 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Filters */}
-            <div className="flex gap-4 mb-4 flex-wrap items-end">
-              <div>
-                <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
-                  Ticker
-                </label>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchTicker}
-                  onChange={(e) => setSearchTicker(e.target.value)}
-                  className="bg-[#12121e] border border-[#2a2a3e] rounded px-3 py-1.5 text-xs w-24 outline-none focus:border-purple-500"
-                />
+            {/* === FILTER BAR === */}
+            <div className="mb-4 px-3 py-3 bg-[#0e0e1a] border border-[#1a1a2e] rounded-md">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+                  Filters
+                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[11px] text-gray-500">
+                    {visibleCount} of{" "}
+                    {selectedMode === "compression"
+                      ? compressionRows.length
+                      : fullSetupRows.length}{" "}
+                    stocks
+                  </span>
+                  <button
+                    onClick={resetFilters}
+                    className="text-[10px] text-gray-500 hover:text-purple-300 underline-offset-2 hover:underline"
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
 
-              {selectedMode === "compression" && (
-                <>
-                  <div>
-                    <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
-                      Alignment
-                    </label>
-                    <div className="flex gap-1">
-                      {["ALL", "BULLISH", "BEARISH", "MIXED"].map((a) => {
-                        const c =
-                          a === "ALL"
-                            ? {
-                                bg: "#1e1b2e",
-                                text: "#a78bfa",
-                                border: "#4c3a8a",
-                              }
-                            : alignmentColor(a);
-                        return (
-                          <button
-                            key={a}
-                            onClick={() => setFilterAlignment(a)}
-                            className="px-2.5 py-1 rounded text-[10px] font-semibold tracking-wide border transition-all"
-                            style={{
-                              borderColor:
-                                filterAlignment === a ? c.border : "#2a2a3e",
-                              background:
-                                filterAlignment === a ? c.bg : "transparent",
-                              color: filterAlignment === a ? c.text : "#4a4a6a",
-                            }}
-                          >
-                            {a}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
-                      Max Spread:{" "}
-                      <span style={{ color: spreadColor(maxSpread) }}>
-                        {maxSpread.toFixed(1)}%
-                      </span>
-                    </label>
-                    <input
-                      type="range"
-                      min={0.1}
-                      max={3.0}
-                      step={0.1}
-                      value={maxSpread}
-                      onChange={(e) => setMaxSpread(parseFloat(e.target.value))}
-                      className="w-36 accent-purple-500"
-                    />
-                  </div>
-                </>
-              )}
-
-              {selectedMode === "full_setup" && (
+              <div className="flex gap-4 flex-wrap items-end">
+                {/* Search (both modes) */}
                 <div>
                   <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
-                    Min Composite:{" "}
-                    <span style={{ color: scoreColor(minComposite) }}>
-                      {minComposite}
-                    </span>
+                    Ticker
                   </label>
                   <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={minComposite}
-                    onChange={(e) => setMinComposite(parseInt(e.target.value))}
-                    className="w-36 accent-purple-500"
+                    type="text"
+                    placeholder="Search..."
+                    value={searchTicker}
+                    onChange={(e) => setSearchTicker(e.target.value)}
+                    className="bg-[#12121e] border border-[#2a2a3e] rounded px-3 py-1.5 text-xs w-24 outline-none focus:border-purple-500"
                   />
                 </div>
-              )}
 
-              <div className="ml-auto text-xs text-gray-500">
-                {visibleCount} stocks
+                {/* === COMPRESSION FILTERS === */}
+                {selectedMode === "compression" && (
+                  <>
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Alignment
+                      </label>
+                      <div className="flex gap-1">
+                        {["ALL", "BULLISH", "BEARISH", "MIXED"].map((a) => {
+                          const c =
+                            a === "ALL"
+                              ? {
+                                  bg: "#1e1b2e",
+                                  text: "#a78bfa",
+                                  border: "#4c3a8a",
+                                }
+                              : alignmentColor(a);
+                          return (
+                            <button
+                              key={a}
+                              onClick={() => setFilterAlignment(a)}
+                              className="px-2.5 py-1 rounded text-[10px] font-semibold tracking-wide border transition-all"
+                              style={{
+                                borderColor:
+                                  filterAlignment === a ? c.border : "#2a2a3e",
+                                background:
+                                  filterAlignment === a ? c.bg : "transparent",
+                                color:
+                                  filterAlignment === a ? c.text : "#4a4a6a",
+                              }}
+                            >
+                              {a}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Max Spread:{" "}
+                        <span style={{ color: spreadColor(maxSpread) }}>
+                          {maxSpread.toFixed(1)}%
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0.1}
+                        max={3.0}
+                        step={0.1}
+                        value={maxSpread}
+                        onChange={(e) =>
+                          setMaxSpread(parseFloat(e.target.value))
+                        }
+                        className="w-36 accent-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Min Score:{" "}
+                        <span style={{ color: scoreColor(minScore) }}>
+                          {minScore}
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={minScore}
+                        onChange={(e) =>
+                          setMinScore(parseInt(e.target.value))
+                        }
+                        className="w-36 accent-purple-500"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* === FULL_SETUP FILTERS === */}
+                {selectedMode === "full_setup" && (
+                  <>
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Min Composite:{" "}
+                        <span style={{ color: scoreColor(minComposite) }}>
+                          {minComposite}
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={minComposite}
+                        onChange={(e) =>
+                          setMinComposite(parseInt(e.target.value))
+                        }
+                        className="w-36 accent-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Min Alignment
+                      </label>
+                      <div className="flex gap-1">
+                        {[0, 1, 2, 3].map((n) => (
+                          <button
+                            key={n}
+                            onClick={() => setMinAlignmentCount(n)}
+                            className={`px-2.5 py-1 rounded text-[10px] font-semibold tracking-wide border transition-all ${
+                              minAlignmentCount === n
+                                ? "bg-purple-500/20 border-purple-500/60 text-purple-300"
+                                : "border-[#2a2a3e] text-gray-500 hover:text-gray-300"
+                            }`}
+                          >
+                            {n === 0 ? "ANY" : `≥${n}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Max Flat %:{" "}
+                        <span className="text-gray-300">
+                          {maxFlatDistance.toFixed(1)}%
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0.5}
+                        max={10}
+                        step={0.5}
+                        value={maxFlatDistance}
+                        onChange={(e) =>
+                          setMaxFlatDistance(parseFloat(e.target.value))
+                        }
+                        className="w-36 accent-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Squeeze
+                      </label>
+                      <div className="flex gap-1">
+                        {(["ANY", "YES", "NO"] as const).map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => setFilterSqueeze(opt)}
+                            className={`px-2.5 py-1 rounded text-[10px] font-semibold tracking-wide border transition-all ${
+                              filterSqueeze === opt
+                                ? opt === "YES"
+                                  ? "bg-green-500/15 border-green-500/60 text-green-300"
+                                  : opt === "NO"
+                                    ? "bg-red-500/15 border-red-500/60 text-red-300"
+                                    : "bg-purple-500/20 border-purple-500/60 text-purple-300"
+                                : "border-[#2a2a3e] text-gray-500 hover:text-gray-300"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Min Weekly:{" "}
+                        <span style={{ color: scoreColor(minWeekly) }}>
+                          {minWeekly}
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={minWeekly}
+                        onChange={(e) =>
+                          setMinWeekly(parseInt(e.target.value))
+                        }
+                        className="w-36 accent-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Base Break
+                      </label>
+                      <div className="flex gap-1">
+                        {(["ANY", "YES", "NO"] as const).map((opt) => (
+                          <button
+                            key={opt}
+                            onClick={() => setFilterBaseBreak(opt)}
+                            className={`px-2.5 py-1 rounded text-[10px] font-semibold tracking-wide border transition-all ${
+                              filterBaseBreak === opt
+                                ? opt === "YES"
+                                  ? "bg-green-500/15 border-green-500/60 text-green-300"
+                                  : opt === "NO"
+                                    ? "bg-red-500/15 border-red-500/60 text-red-300"
+                                    : "bg-purple-500/20 border-purple-500/60 text-purple-300"
+                                : "border-[#2a2a3e] text-gray-500 hover:text-gray-300"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Min Base Years:{" "}
+                        <span className="text-gray-300">
+                          {minBaseYears.toFixed(1)}y
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={5}
+                        step={0.5}
+                        value={minBaseYears}
+                        onChange={(e) =>
+                          setMinBaseYears(parseFloat(e.target.value))
+                        }
+                        className="w-32 accent-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-gray-600 uppercase tracking-widest mb-1">
+                        Min Volume:{" "}
+                        <span className="text-gray-300">
+                          {minVolumeRatio.toFixed(2)}x
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={3}
+                        step={0.1}
+                        value={minVolumeRatio}
+                        onChange={(e) =>
+                          setMinVolumeRatio(parseFloat(e.target.value))
+                        }
+                        className="w-32 accent-purple-500"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
